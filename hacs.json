@@ -1,0 +1,6 @@
+{
+  "name": "HOLM Energy Cards",
+  "render_readme": true,
+  "homeassistant": "2025.1.0",
+  "filename": "holm-energy-cards.js"
+}
