@@ -13,11 +13,22 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | Carte | Type | Ce qu'elle montre |
 |---|---|---|
 | [Bilan énergétique](#-bilan-énergétique) | `custom:holm-energy-sources-card` | Production, achat, revente, autoconsommation, autosuffisance, facture estimée |
-| [Consommation par appareil](#-consommation-par-appareil) | `custom:holm-energy-devices-card` | kWh, coût et part de chaque appareil, avec le « non mesuré » |
+| [Consommation par appareil](#-consommation-par-appareil) | `custom:holm-energy-devices-card` | kWh, coût et part de chaque appareil, avec le « non mesuré » et un graphique par appareil |
 | [Production & consommation](#-production--consommation) | `custom:holm-solar-chart-card` | Graphique énergie (barres) et puissance (courbe) du solaire et du réseau |
 | [Chauffage & climatisation](#-chauffage--climatisation) | `custom:holm-climate-energy-card` | Chauffage et clim par pièce, coût, évolution, graphique ou calendrier |
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
+
+### 🆕 Nouveautés de la 1.1.0
+
+**📈 Un graphique pour chaque appareil.** Dans *Consommation par appareil*, un toucher sur un appareil ouvre son graphique :
+
+- périodes **24 h · 7 j · 30 j · 12 mois** ou **dates au choix** (du… au…) ;
+- **barres de consommation** par heure, par jour ou par mois, et la **courbe de puissance** par-dessus sur 24 h si l'appareil a un capteur de puissance ;
+- chiffres clés de la période : **total**, **coût estimé**, **moyenne** et **pic** (avec sa date) ;
+- survol (ou toucher) d'une barre pour voir sa valeur ; bouton ⓘ pour la fenêtre d'informations de Home Assistant.
+
+Les données viennent des statistiques long terme de Home Assistant (celles du tableau Énergie) : c'est rapide et ça remonte aussi loin que votre historique.
 
 ---
 
@@ -89,6 +100,7 @@ subscription_period: month
 - kWh, part et **coût** de chaque appareil, mini-graphe, tri par kWh, € ou nom, « Voir tout ».
 - **Non mesuré** : ce que consomme la maison en dehors des appareils suivis.
 - Coût **réel** (prix réseau de chaque heure, solaire gratuit), **réseau** (comme si tout venait du réseau) ou **fixe**.
+- **Graphique par appareil** : un toucher sur un appareil ouvre sa consommation sur 24 h, 7 j, 30 j, 12 mois ou les dates de votre choix, avec total, coût estimé, moyenne et pic. Le coût estimé utilise le prix moyen de l'appareil sur la période affichée par la carte.
 
 ```yaml
 type: custom:holm-energy-devices-card
@@ -106,7 +118,7 @@ top: 8
 | `sort` | `kwh`, `eur` ou `name` | `kwh` |
 | `hide_zero`, `show_unmeasured`, `show_sparkline` | Masquer les appareils à 0, afficher le non mesuré, les mini-graphes | `true` |
 | `exclude` | Appareils à ignorer | — |
-| `devices` | Liste manuelle : `entity`, `name`, `icon`, `color`, `power` | appareils du tableau Énergie |
+| `devices` | Liste manuelle : `entity`, `name`, `icon`, `color`, `power` (le capteur de puissance ajoute la courbe au graphique) | appareils du tableau Énergie |
 
 ## ☀️ Production & consommation
 
@@ -213,6 +225,7 @@ Toutes les cartes acceptent aussi `show_frame: false` (sans cadre) et, pour cell
 | Une carte reste sur « aujourd'hui » | Ajoutez une carte **Sélecteur de date énergie** (`energy-date-selection`) dans la même vue. |
 | Pas d'appareils ou de sources | Configurez d'abord le **tableau de bord Énergie** de Home Assistant. |
 | Les coûts sont à 0 | Indiquez un prix (entité ou nombre) pour vos sources réseau, dans le tableau Énergie ou dans la carte. |
+| Pas de courbe de puissance dans le graphique d'un appareil | Associez un capteur de puissance à l'appareil (tableau Énergie, ou `power` dans `devices`). |
 | La nouvelle version ne s'affiche pas | Videz le cache (Ctrl + F5). |
 
 ---
@@ -229,4 +242,6 @@ La carte vous plaît ? Vous pouvez m'offrir une bière 🍺
 
 Code : licence **MIT** — © kaaribou. Voir le [CHANGELOG](CHANGELOG.md).
 
-Fait partie de la collection **HOLM** : [Carburant HOLM](https://github.com/kaaribou/carburant-holm) · [HOLM Navbar Card](https://github.com/kaaribou/holm-navbar-card) · [HOLM Music Card](https://github.com/kaaribou/holm-music-card) · [HOLM Sentinel Card](https://github.com/kaaribou/holm-sentinel-card).
+Fait partie de **HOLM — Home Orchestration & Living Management** : la gestion et l'orchestration intelligente de la maison.
+
+Les autres projets : [Volets HOLM](https://github.com/kaaribou/volets-holm) · [Climat HOLM](https://github.com/kaaribou/climat-holm) · [Carburant HOLM](https://github.com/kaaribou/carburant-holm) · [Commandes à la maison HOLM](https://github.com/kaaribou/commandes-holm) · [HOLM Navbar Card](https://github.com/kaaribou/holm-navbar-card) · [HOLM Climate Card](https://github.com/kaaribou/climate-card-holm) · [HOLM Music Card](https://github.com/kaaribou/holm-music-card) · [HOLM Sentinel Card](https://github.com/kaaribou/holm-sentinel-card) · [HOLM Security Card](https://github.com/kaaribou/holm-security-card) · [HOLM Recordings Card](https://github.com/kaaribou/holm-recordings-card) · [HOLM Covers Card](https://github.com/kaaribou/holm-covers-card) · [HOLM Power Flow Card](https://github.com/kaaribou/holm-power-flow-card) · [HOLM Radiator Card](https://github.com/kaaribou/holm-radiator-card) · [HOLM Floor Card](https://github.com/kaaribou/holm-floor-card) · [HOLM Smoke Card](https://github.com/kaaribou/holm-smoke-card) · [HOLM BG Card](https://github.com/kaaribou/holm-bg-card).
