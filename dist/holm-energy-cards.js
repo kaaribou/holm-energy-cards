@@ -1,4 +1,4 @@
-/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.1.0
+/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.1.1
  * Bilan énergétique, consommation par appareil, production & consommation, chauffage & climatisation,
  * énergie par année (barres) et totaux annuels (frise). Un seul fichier, six cartes.
  */
@@ -21,6 +21,26 @@
 // tax_export: input_number.taxe_revente                  (€/kWh déduits des kWh revendus)
 // self_price: sensor.tarif_actuel   (valeur du kWh autoconsommé ; défaut = prix moyen d'achat de la période)
 (() => {
+// Garde la position de défilement pendant un nouveau rendu complet de la carte (iPhone / iPad : WebKit n'a pas de
+// « scroll anchoring » et la page remontait d'un coup). On fige la hauteur de la carte et on remet le défilement en place.
+const keepScroll = (host, fn) => {
+  const saved = [];
+  let n = host;
+  while (n) {
+    n = n.assignedSlot || n.parentNode || n.host;
+    if (n && n.nodeType === 1 && n.scrollHeight > n.clientHeight) saved.push([n, n.scrollTop]);
+  }
+  const se = document.scrollingElement;
+  if (se) saved.push([se, se.scrollTop]);
+  const h = host.offsetHeight;
+  if (h) host.style.minHeight = `${h}px`;
+  try { return fn(); } finally {
+    const restore = () => saved.forEach(([el, t]) => { if (Math.abs(el.scrollTop - t) > 1) el.scrollTop = t; });
+    restore();
+    requestAnimationFrame(() => { restore(); host.style.minHeight = ""; requestAnimationFrame(restore); });
+    setTimeout(() => { host.style.minHeight = ""; }, 500);   // page en arrière-plan : pas d'image affichée, donc pas de requestAnimationFrame
+  }
+};
 const fr = (v, d = 1) => Number(v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const DEF = {
   solar: { color: "#e3a21a", icon: "mdi:solar-power-variant", label: "Production" },
@@ -104,6 +124,9 @@ class HolmEnergySourcesCard extends HTMLElement {
     return `${s.toLocaleDateString("fr-FR", o)} → ${eIncl.toLocaleDateString("fr-FR", { ...o, year: s.getFullYear() !== eIncl.getFullYear() ? "numeric" : undefined })}`;
   }
   _render() {
+    return keepScroll(this, () => this._renderNow());
+  }
+  _renderNow() {
     if (!this.shadowRoot || !this._c) return;
     const c = this._c, d = this._data || [];
     const by = (t) => d.filter((x) => x.type === t);
@@ -353,6 +376,26 @@ window.customCards.push({ type: "holm-energy-sources-card", name: "HOLM – Bila
 //   - entity: sensor.xxx_energy   name: Libellé   icon: mdi:xxx   color: "#hex"   power: sensor.xxx_power
 // Un toucher sur un appareil ouvre son graphique (24 h, 7 j, 30 j, 12 mois ou dates au choix)
 (() => {
+// Garde la position de défilement pendant un nouveau rendu complet de la carte (iPhone / iPad : WebKit n'a pas de
+// « scroll anchoring » et la page remontait d'un coup). On fige la hauteur de la carte et on remet le défilement en place.
+const keepScroll = (host, fn) => {
+  const saved = [];
+  let n = host;
+  while (n) {
+    n = n.assignedSlot || n.parentNode || n.host;
+    if (n && n.nodeType === 1 && n.scrollHeight > n.clientHeight) saved.push([n, n.scrollTop]);
+  }
+  const se = document.scrollingElement;
+  if (se) saved.push([se, se.scrollTop]);
+  const h = host.offsetHeight;
+  if (h) host.style.minHeight = `${h}px`;
+  try { return fn(); } finally {
+    const restore = () => saved.forEach(([el, t]) => { if (Math.abs(el.scrollTop - t) > 1) el.scrollTop = t; });
+    restore();
+    requestAnimationFrame(() => { restore(); host.style.minHeight = ""; requestAnimationFrame(restore); });
+    setTimeout(() => { host.style.minHeight = ""; }, 500);   // page en arrière-plan : pas d'image affichée, donc pas de requestAnimationFrame
+  }
+};
 // ---- holm-energy-chart : panneau graphique partagé (HOLM Power Flow Card / HOLM Energy Cards) ----
 // open(hass, {
 //   name, subtitle, color, icon, entity (pour « Détails »),
@@ -842,6 +885,9 @@ class HolmEnergyDevicesCard extends HTMLElement {
     }).join("")}</svg>`;
   }
   _render() {
+    return keepScroll(this, () => this._renderNow());
+  }
+  _renderNow() {
     if (!this.shadowRoot || !this._c) return;
     const c = this._c, d = this._data;
     let body = `<div class="empty">Chargement…</div>`;
@@ -1083,6 +1129,26 @@ window.customCards.push({ type: "holm-energy-devices-card", name: "HOLM – Cons
 // grid_power: sensor.puissance_reseau                 (défaut : puissance réseau du tableau Énergie)
 // solar_color / self_color / export_color / grid_colors: ["#4a90d9", "#e2702a"] / power_grid_color
 (() => {
+// Garde la position de défilement pendant un nouveau rendu complet de la carte (iPhone / iPad : WebKit n'a pas de
+// « scroll anchoring » et la page remontait d'un coup). On fige la hauteur de la carte et on remet le défilement en place.
+const keepScroll = (host, fn) => {
+  const saved = [];
+  let n = host;
+  while (n) {
+    n = n.assignedSlot || n.parentNode || n.host;
+    if (n && n.nodeType === 1 && n.scrollHeight > n.clientHeight) saved.push([n, n.scrollTop]);
+  }
+  const se = document.scrollingElement;
+  if (se) saved.push([se, se.scrollTop]);
+  const h = host.offsetHeight;
+  if (h) host.style.minHeight = `${h}px`;
+  try { return fn(); } finally {
+    const restore = () => saved.forEach(([el, t]) => { if (Math.abs(el.scrollTop - t) > 1) el.scrollTop = t; });
+    restore();
+    requestAnimationFrame(() => { restore(); host.style.minHeight = ""; requestAnimationFrame(restore); });
+    setTimeout(() => { host.style.minHeight = ""; }, 500);   // page en arrière-plan : pas d'image affichée, donc pas de requestAnimationFrame
+  }
+};
 const fr = (v, d = 1) => Number(v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const W_ = (w) => (Math.abs(w) >= 1000 ? `${fr(w / 1000, 2)} <small>kW</small>` : `${fr(w, 0)} <small>W</small>`);
 const DEF = { solar_color: "#e3a21a", self_color: "#1fce8a", export_color: "#9b6fd6", grid_colors: ["#4a90d9", "#e2702a", "#e05a8a", "#6fc3ff"], power_grid_color: "#4a90d9" };
@@ -1337,6 +1403,9 @@ class HolmSolarChartCard extends HTMLElement {
     return `<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}">${g}<line class="hovl" x1="0" x2="0" y1="${pt}" y2="${H - pb}"/></svg>`;
   }
   _render() {
+    return keepScroll(this, () => this._renderNow());
+  }
+  _renderNow() {
     if (!this.shadowRoot || !this._c) return;
     const c = this._c, d = this._data;
     const col = { solar: c.solar_color || DEF.solar_color, self: c.self_color || DEF.self_color, exp: c.export_color || DEF.export_color,
@@ -1519,6 +1588,26 @@ window.customCards.push({ type: "holm-solar-chart-card", name: "HOLM – Product
 //     heating: sensor.sejour_climatecontrol_heating_daily_electrical_consumption
 //     cooling: sensor.sejour_climatecontrol_cooling_daily_electrical_consumption
 (() => {
+// Garde la position de défilement pendant un nouveau rendu complet de la carte (iPhone / iPad : WebKit n'a pas de
+// « scroll anchoring » et la page remontait d'un coup). On fige la hauteur de la carte et on remet le défilement en place.
+const keepScroll = (host, fn) => {
+  const saved = [];
+  let n = host;
+  while (n) {
+    n = n.assignedSlot || n.parentNode || n.host;
+    if (n && n.nodeType === 1 && n.scrollHeight > n.clientHeight) saved.push([n, n.scrollTop]);
+  }
+  const se = document.scrollingElement;
+  if (se) saved.push([se, se.scrollTop]);
+  const h = host.offsetHeight;
+  if (h) host.style.minHeight = `${h}px`;
+  try { return fn(); } finally {
+    const restore = () => saved.forEach(([el, t]) => { if (Math.abs(el.scrollTop - t) > 1) el.scrollTop = t; });
+    restore();
+    requestAnimationFrame(() => { restore(); host.style.minHeight = ""; requestAnimationFrame(restore); });
+    setTimeout(() => { host.style.minHeight = ""; }, 500);   // page en arrière-plan : pas d'image affichée, donc pas de requestAnimationFrame
+  }
+};
 const fr = (v, d = 1) => Number(v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 const HEAT = "#e2702a", COOL = "#4aa8e0";
 
@@ -1697,6 +1786,9 @@ class HolmClimateEnergyCard extends HTMLElement {
       <div class="hr ax2"><div class="hn"></div><div class="hc">${d.T.map((t, i) => `<span>${i % step === 0 ? this._tlab(t, d.period, true) : ""}</span>`).join("")}</div></div></div>`;
   }
   _render() {
+    return keepScroll(this, () => this._renderNow());
+  }
+  _renderNow() {
     if (!this.shadowRoot || !this._c) return;
     const c = this._c, d = this._data;
     const hc = c.heat_color || HEAT, cc = c.cool_color || COOL;
@@ -2181,4 +2273,4 @@ window.customCards = window.customCards || [];
 window.customCards.push({ type: "holm-energy-years-card", name: "HOLM – Totaux annuels", description: "Totaux annuels d'une statistique d'énergie, en frise verticale" });
 })();
 
-console.info("%c HOLM-ENERGY-CARDS %c 1.1.0 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
+console.info("%c HOLM-ENERGY-CARDS %c 1.1.1 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
