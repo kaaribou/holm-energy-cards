@@ -1,4 +1,4 @@
-/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.1.1
+/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.2.0
  * Bilan énergétique, consommation par appareil, production & consommation, chauffage & climatisation,
  * énergie par année (barres) et totaux annuels (frise). Un seul fichier, six cartes.
  */
@@ -371,6 +371,8 @@ window.customCards.push({ type: "holm-energy-sources-card", name: "HOLM – Bila
 // top: 10                (nombre d'appareils affichés avant « Voir tout »)
 // hide_zero: true   show_unmeasured: true   show_sparkline: true   show_frame: true
 // sort: kwh | eur | name
+// view: list | timeline   (vue par défaut : liste des appareils ou « Dans le temps »)
+// timeline_devices: 8     (appareils détaillés dans la vue « Dans le temps », les autres regroupés)
 // exclude: [sensor.xxx]
 // devices:               (optionnel : liste manuelle, sinon appareils du tableau de bord Énergie)
 //   - entity: sensor.xxx_energy   name: Libellé   icon: mdi:xxx   color: "#hex"   power: sensor.xxx_power
@@ -403,8 +405,10 @@ const keepScroll = (host, fn) => {
 //   power: entité de puissance (W ou kW) ou liste d'entités additionnées,  signed: true = négatif → revente (réseau)
 //   energy: [statistic_id…] (kWh, ajoutés),  energyNeg: [statistic_id…] (soustraits),  energyOut: [statistic_id…] (revente, réseau)
 //   price: €/kWh (estimation du coût, mode énergie), outColor, defaultRange
+//   costFor: async (start, end) => [{ t, kwh, eur }…]  coût réel par créneau (prix HC/HP de chaque heure, solaire déduit) :
+//            prioritaire sur price, le coût de chaque barre est la somme de ses créneaux
 // })
-if (!customElements.get("holm-energy-chart-v1")) {
+if (!customElements.get("holm-energy-chart-v2")) {
   const frc = (v, d = 1) => Number(v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
   const escc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fW = (w) => (Math.abs(w) >= 1000 ? `${frc(w / 1000, Math.abs(w) >= 10000 ? 1 : 2)} kW` : `${frc(w, 0)} W`);
@@ -505,6 +509,17 @@ if (!customElements.get("holm-energy-chart-v1")) {
           let line = null;
           if (o.power && period === "hour") line = await this._powerSeries(o.power, start, end);
           d = { kind: "bars", period, t0: +start, t1: +end, bars: T.map((t) => ({ t, v: bars.get(t) })), line };
+          if (typeof o.costFor === "function") {   // coût réel créneau par créneau, calculé après l'affichage des barres
+            d.costPending = true;
+            o.costFor(start, end).then((cs) => {
+              if (seq !== this._seq || !Array.isArray(cs)) return;
+              const next = (i) => (i + 1 < d.bars.length ? d.bars[i + 1].t : Infinity);
+              d.bars.forEach((b, i) => { b.eur = cs.reduce((a, c) => a + (c.t >= b.t && c.t < next(i) ? c.eur : 0), 0); });
+              d.eur = d.bars.reduce((a, b) => a + b.eur, 0);
+              d.costPending = false;
+              this._draw();
+            }).catch(() => { d.costPending = false; if (seq === this._seq) this._draw(); });
+          }
         } else {
           const ser = await this._powerSeries(o.power, start, end);
           let eIn = NaN, eOut = NaN;
@@ -598,13 +613,17 @@ if (!customElements.get("holm-energy-chart-v1")) {
         const tot = d.bars.reduce((a, b) => a + b.v, 0);
         const unit = { hour: "h", day: "jour", month: "mois" }[d.period];
         const pkLbl = new Date(pk.t).toLocaleString("fr-FR", d.period === "hour" ? { weekday: "short", hour: "2-digit", minute: "2-digit" } : d.period === "day" ? { weekday: "short", day: "numeric", month: "short" } : { month: "long", year: "numeric" });
-        stats = `<div><small>Total</small><b>${fK(tot)}</b></div>${o.price > 0 ? `<div><small>Coût estimé</small><b>${frc(tot * o.price, 2)} €</b><em>à ${frc(o.price, 3)} €/kWh</em></div>` : ""}
+        const costBox = d.costPending ? `<div><small>Coût</small><b>…</b><em>calcul au prix de chaque heure</em></div>`
+          : d.eur != null ? `<div><small>Coût</small><b>${frc(d.eur, 2)} €</b><em>${tot > 0 ? `${frc(d.eur / tot, 3)} €/kWh en moyenne` : ""}</em></div>`
+          : o.price > 0 ? `<div><small>Coût estimé</small><b>${frc(tot * o.price, 2)} €</b><em>à ${frc(o.price, 3)} €/kWh</em></div>` : "";
+        stats = `<div><small>Total</small><b>${fK(tot)}</b></div>${costBox}
           <div><small>Moyenne / ${unit}</small><b>${fK(tot / d.bars.length)}</b></div><div><small>Pic</small><b>${fK(pk.v)}</b><em>${escc(pkLbl)}</em></div>`;
         legend = `<span><i class="lbar"></i>Consommation par ${{ hour: "heure", day: "jour", month: "mois" }[d.period]}</span>` + legend;
         hover = (t) => {
           const b = d.bars.find((q) => t >= q.t && t < q.t + step); if (!b) return null;
           const lbl = new Date(b.t).toLocaleString("fr-FR", d.period === "hour" ? { weekday: "short", hour: "2-digit", minute: "2-digit" } : d.period === "day" ? { weekday: "long", day: "numeric", month: "short" } : { month: "long", year: "numeric" });
-          return { px: x(b.t + step / 2), py: y(b.v), html: `<small>${escc(lbl)}</small><b>${fK(b.v)}</b>${o.price > 0 ? `<span>≈ ${frc(b.v * o.price, 2)} €</span>` : ""}` };
+          const eur = b.eur != null ? b.eur : o.price > 0 ? b.v * o.price : null;
+          return { px: x(b.t + step / 2), py: y(b.v), html: `<small>${escc(lbl)}</small><b>${fK(b.v)}</b>${eur != null ? `<span>${b.eur != null ? "" : "≈ "}${frc(eur, 2)} €</span>` : ""}` };
         };
       } else {
         const pts = d.pts;
@@ -723,11 +742,11 @@ if (!customElements.get("holm-energy-chart-v1")) {
       @media (max-width:480px) { .bg { padding:8px; align-items:flex-end; } .dlg { border-radius:22px 22px 14px 14px; padding:12px; } }`;
     }
   }
-  customElements.define("holm-energy-chart-v1", HolmEnergyChart);
+  customElements.define("holm-energy-chart-v2", HolmEnergyChart);
 }
 const openEnergyChart = (hass, o) => {
-  let dlg = document.querySelector("holm-energy-chart-v1");
-  if (!dlg) { dlg = document.createElement("holm-energy-chart-v1"); document.body.appendChild(dlg); }
+  let dlg = document.querySelector("holm-energy-chart-v2");
+  if (!dlg) { dlg = document.createElement("holm-energy-chart-v2"); document.body.appendChild(dlg); }
   dlg.open(hass, o);
 };
 
@@ -748,6 +767,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
   setConfig(c) {
     this._c = { title: "Consommation par appareil", cost_mode: "real", top: 10, hide_zero: true, show_unmeasured: true, show_sparkline: true, sort: "kwh", show_frame: true, ...c };
     this._sort = this._c.sort; this._all = false;
+    this._view = this._view || (this._c.view === "timeline" ? "time" : "list"); this._hidden = this._hidden || new Set();
     if (this.shadowRoot) this._render();
     if (this._hass) { this._prefs = null; this._subscribe(); }
   }
@@ -788,16 +808,14 @@ class HolmEnergyDevicesCard extends HTMLElement {
     if (!this._prefs) { try { this._prefs = await this._hass.callWS({ type: "energy/get_prefs" }); } catch (e) { this._prefs = { energy_sources: [], device_consumption: [] }; } }
     return this._prefs;
   }
-  async _load() {
-    if (!this._hass || !this._range) return;
-    const seq = (this._seq = (this._seq || 0) + 1);
+  // appareils et sources du tableau de bord Énergie
+  async _sources() {
     const c = this._c, prefs = await this._getPrefs();
     const excl = new Set(c.exclude || []);
     const devs = (Array.isArray(c.devices) && c.devices.length
       ? c.devices.map((d) => (typeof d === "string" ? { entity: d } : d))
       : (prefs.device_consumption || []).map((d) => ({ entity: d.stat_consumption, name: d.name, power: d.stat_rate })))
       .filter((d) => d.entity && !excl.has(d.entity));
-    // sources (pour le prix réel et le « non mesuré »)
     const grids = [], solars = [], exports = [];
     for (const s of prefs.energy_sources || []) {
       if (s.type === "solar" && s.stat_energy_from) solars.push(s.stat_energy_from);
@@ -808,62 +826,97 @@ class HolmEnergyDevicesCard extends HTMLElement {
         for (const t of s.flow_to || (s.stat_energy_to ? [{ stat_energy_to: s.stat_energy_to }] : [])) exports.push(t.stat_energy_to);
       }
     }
-    const { start } = this._range, end = this._range.end || new Date();
+    return { devs, grids, solars, exports };
+  }
+  // Prix du kWh créneau par créneau. Créneaux d'une heure jusqu'à 31 jours (prix HC/HP exacts), d'un jour au-delà.
+  async _compute(start, end, devs, src) {
+    const c = this._c, { grids, solars, exports } = src;
     const span = (end - start) / 86400000;
-    const period = span <= 3 ? "hour" : span <= 93 ? "day" : "month";
+    const period = span <= 31 ? "hour" : "day";
     const ids = [...new Set([...devs.map((d) => d.entity), ...grids.map((g) => g.id), ...grids.map((g) => g.cost), ...solars, ...exports].filter(Boolean))];
-    try {
-      const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
-        statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
-      if (seq !== this._seq) return;
-      const slots = new Set();
-      const ser = (id) => { const m = new Map(); for (const s of r[id] || []) { const t = +new Date(s.start); slots.add(t); m.set(t, (m.get(t) || 0) + (Number(s.change) || 0)); } return m; };
-      const devS = devs.map((d) => ser(d.entity));
-      const gS = grids.map((g) => ({ kwh: ser(g.id), cost: g.cost ? ser(g.cost) : null, price: g.price }));
-      const solS = solars.map(ser), expS = exports.map(ser);
-      const T = [...slots].sort((a, b) => a - b);
-      const tax = (Array.isArray(c.taxes_import) ? c.taxes_import : c.taxes_import ? [c.taxes_import] : []).reduce((a, e) => a + (this._num(e) || 0), 0);
-      const fixed = this._num(c.price);
-      // prix par créneau
-      const price = new Map(), home = new Map();
-      let impTot = 0, costTot = 0;
-      for (const t of T) {
-        let imp = 0, cost = 0;
-        for (const g of gS) {
-          const k = g.kwh.get(t) || 0; imp += k;
-          cost += g.cost ? g.cost.get(t) || 0 : k * (this._num(g.price) || 0);
-        }
-        cost += imp * tax; impTot += imp; costTot += cost;
-        const sol = solS.reduce((a, m) => a + (m.get(t) || 0), 0), ex = expS.reduce((a, m) => a + (m.get(t) || 0), 0);
-        const cons = Math.max(0, imp + sol - ex);
-        home.set(t, cons);
-        let p;
-        if (c.cost_mode === "fixed") p = isNaN(fixed) ? 0 : fixed;
-        else if (c.cost_mode === "grid") p = imp > 0 ? cost / imp : NaN;
-        else p = cons > 0 ? cost / cons : NaN;
-        price.set(t, p);
+    const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+      statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
+    const slots = new Set();
+    const ser = (id) => { const m = new Map(); for (const s of r[id] || []) { const t = +new Date(s.start); slots.add(t); m.set(t, (m.get(t) || 0) + (Number(s.change) || 0)); } return m; };
+    const devS = devs.map((d) => ser(d.entity));
+    const gS = grids.map((g) => ({ kwh: ser(g.id), cost: g.cost ? ser(g.cost) : null, price: g.price }));
+    const solS = solars.map(ser), expS = exports.map(ser);
+    const T = [...slots].sort((a, b) => a - b);
+    const tax = (Array.isArray(c.taxes_import) ? c.taxes_import : c.taxes_import ? [c.taxes_import] : []).reduce((a, e) => a + (this._num(e) || 0), 0);
+    const fixed = this._num(c.price);
+    const price = new Map(), home = new Map();
+    let impTot = 0, costTot = 0;
+    for (const t of T) {
+      let imp = 0, cost = 0;
+      for (const g of gS) {
+        const k = g.kwh.get(t) || 0; imp += k;
+        cost += g.cost ? g.cost.get(t) || 0 : k * (this._num(g.price) || 0);
       }
-      const avg = impTot > 0 ? costTot / impTot : 0; // secours quand un créneau n'a pas d'achat réseau (mode grid)
-      for (const t of T) if (isNaN(price.get(t))) price.set(t, c.cost_mode === "grid" ? avg : 0);
+      cost += imp * tax; impTot += imp; costTot += cost;
+      const sol = solS.reduce((a, m) => a + (m.get(t) || 0), 0), ex = expS.reduce((a, m) => a + (m.get(t) || 0), 0);
+      const cons = Math.max(0, imp + sol - ex);
+      home.set(t, cons);
+      let p;
+      if (c.cost_mode === "fixed") p = isNaN(fixed) ? 0 : fixed;
+      else if (c.cost_mode === "grid") p = imp > 0 ? cost / imp : NaN;
+      else p = cons > 0 ? cost / cons : NaN;
+      price.set(t, p);
+    }
+    const avg = impTot > 0 ? costTot / impTot : 0; // secours quand un créneau n'a pas d'achat réseau (mode grid)
+    for (const t of T) if (isNaN(price.get(t))) price.set(t, c.cost_mode === "grid" ? avg : 0);
+    return { T, period, price, home, devS, impTot, hasHome: gS.length > 0 };
+  }
+  // créneaux regroupés pour l'affichage : heures (≤ 2 j), jours (≤ 62 j) ou mois
+  _buckets(T, start, end) {
+    const span = (end - start) / 86400000;
+    const g = span <= 2 ? "hour" : span <= 62 ? "day" : "month";
+    const key = (t) => { const d = new Date(t); if (g === "hour") { d.setMinutes(0, 0, 0); } else if (g === "day") d.setHours(0, 0, 0, 0); else { d.setDate(1); d.setHours(0, 0, 0, 0); } return +d; };
+    const out = [], idx = new Map();
+    T.forEach((t, i) => { const k = key(t); if (!idx.has(k)) { idx.set(k, out.length); out.push({ t: k, slots: [] }); } out[idx.get(k)].slots.push(i); });
+    return { g, list: out };
+  }
+  async _load() {
+    if (!this._hass || !this._range) return;
+    const seq = (this._seq = (this._seq || 0) + 1);
+    try {
+      const src = await this._sources();
+      const { devs } = src;
+      const { start } = this._range, end = this._range.end || new Date();
+      const k = await this._compute(start, end, devs, src);
+      if (seq !== this._seq) return;
+      const { T, price, home, devS } = k;
+      const B = this._buckets(T, start, end);
       const rows = devs.map((d, i) => {
         const m = devS[i];
-        let kwh = 0, eur = 0; const spark = [];
-        for (const t of T) { const v = Math.max(0, m.get(t) || 0); kwh += v; eur += v * price.get(t); spark.push(v); }
+        let kwh = 0, eur = 0;
+        const vals = T.map((t) => Math.max(0, m.get(t) || 0));
+        T.forEach((t, j) => { kwh += vals[j]; eur += vals[j] * price.get(t); });
+        const series = B.list.map((b) => b.slots.reduce((a, j) => a + vals[j], 0));
+        const seriesEur = B.list.map((b) => b.slots.reduce((a, j) => a + vals[j] * price.get(T[j]), 0));
         const name = d.name || this._hass.states[d.entity]?.attributes.friendly_name || d.entity;
-        return { ...d, name, kwh, eur, spark, icon: d.icon || iconFor(name) };
+        return { ...d, name, kwh, eur, spark: series, series, seriesEur, icon: d.icon || iconFor(name) };
       });
       const homeTot = [...home.values()].reduce((a, v) => a + v, 0);
-      let unk = 0, unkEur = 0; const unkSpark = [];
-      for (const t of T) {
-        const s = rows.reduce((a, x, j) => a + Math.max(0, devS[j].get(t) || 0), 0);
-        const v = Math.max(0, (home.get(t) || 0) - s); unk += v; unkEur += v * price.get(t); unkSpark.push(v);
-      }
+      let unk = 0, unkEur = 0;
+      const unkVals = T.map((t, j) => Math.max(0, (home.get(t) || 0) - rows.reduce((a, x, n) => a + Math.max(0, devS[n].get(t) || 0), 0)));
+      T.forEach((t, j) => { unk += unkVals[j]; unkEur += unkVals[j] * price.get(t); });
+      const unkSeries = B.list.map((b) => b.slots.reduce((a, j) => a + unkVals[j], 0));
+      const unkSeriesEur = B.list.map((b) => b.slots.reduce((a, j) => a + unkVals[j] * price.get(T[j]), 0));
       // couleurs stables : par rang de consommation
       [...rows].sort((a, b) => b.kwh - a.kwh).forEach((x, i) => { if (!x.color) x.color = PAL[i % PAL.length]; });
-      this._data = { rows, homeTot, unk, unkEur, unkSpark, period, n: T.length, hasHome: gS.length > 0, solarShare: homeTot > 0 ? 1 - Math.min(1, impTot / homeTot) : NaN };
+      this._data = { rows, homeTot, unk, unkEur, unkSpark: unkSeries, unkSeries, unkSeriesEur, buckets: B, period: k.period, n: T.length,
+        hasHome: k.hasHome, solarShare: homeTot > 0 ? 1 - Math.min(1, k.impTot / homeTot) : NaN, t0: +start, t1: +end };
+      this._src = src;
       this._err = null;
     } catch (e) { if (seq === this._seq) this._err = e?.message || String(e); }
     this._render();
+  }
+  // coût réel d'un appareil sur une autre période (graphique détaillé)
+  async _costFor(entity, start, end) {
+    const src = this._src || (await this._sources());
+    const dev = src.devs.find((d) => d.entity === entity) || { entity };
+    const k = await this._compute(start, end, [dev], src);
+    return k.T.map((t) => { const v = Math.max(0, k.devS[0].get(t) || 0); return { t, kwh: v, eur: v * k.price.get(t) }; });
   }
   _periodLabel() {
     if (!this._range) return "";
@@ -932,11 +985,12 @@ class HolmEnergyDevicesCard extends HTMLElement {
       </div>
       ${seg.length ? `<div class="stack">${seg.map((s) => `<i title="${s.n} : ${fr(pct(s.v), 1)} %" class="${s.dash ? "dash" : ""}" style="flex:${s.v};background:${s.c}"></i>`).join("")}</div>
       <div class="leg">${seg.map((s) => `<span><b class="${s.dash ? "dash" : ""}" style="background:${s.c}"></b>${s.n} <em>${fr(pct(s.v), 0)} %</em></span>`).join("")}</div>` : ""}
-      <div class="tools"><div class="seg">${[["kwh", "kWh"], ["eur", "€"], ["name", "A→Z"]].map(([k, l]) => `<button data-s="${k}" class="${this._sort === k ? "on" : ""}">${l}</button>`).join("")}</div>
-        <div class="cnt">${rows.length} appareil${rows.length > 1 ? "s" : ""}${zero && c.hide_zero !== false ? ` · ${zero} à 0` : ""}</div></div>
-      <div class="list">${vis.map((x) => row(x)).join("")}
+      <div class="tools"><div class="seg vw">${[["list", "mdi:format-list-bulleted", "Appareils"], ["time", "mdi:chart-bar-stacked", "Dans le temps"]].map(([k, i, l]) => `<button data-v="${k}" class="${this._view === k ? "on" : ""}" title="${l}"><ha-icon icon="${i}"></ha-icon><span>${l}</span></button>`).join("")}</div>
+        ${this._view === "list" ? `<div class="seg so">${[["kwh", "kWh"], ["eur", "€"], ["name", "A→Z"]].map(([k, l]) => `<button data-s="${k}" class="${this._sort === k ? "on" : ""}">${l}</button>`).join("")}</div>
+        <div class="cnt">${rows.length} appareil${rows.length > 1 ? "s" : ""}${zero && c.hide_zero !== false ? ` · ${zero} à 0` : ""}</div>` : ""}</div>
+      ${this._view === "time" ? this._timeline(d, rows, showUnk) : `<div class="list">${vis.map((x) => row(x)).join("")}
         ${showUnk && (this._all || rows.length <= top) ? row({ name: "Non mesuré", kwh: d.unk, eur: d.unkEur, spark: d.unkSpark, color: UNM, icon: "mdi:help-circle-outline" }, true) : ""}</div>
-      ${rows.length > top ? `<button class="more">${this._all ? "Réduire" : `Voir tous les appareils (${rows.length})`}</button>` : ""}`;
+      ${rows.length > top ? `<button class="more">${this._all ? "Réduire" : `Voir tous les appareils (${rows.length})`}</button>` : ""}`}`;
     }
     this.shadowRoot.innerHTML = `
     <style>
@@ -966,6 +1020,37 @@ class HolmEnergyDevicesCard extends HTMLElement {
       .seg button { border:none; background:none; color:var(--secondary-text-color); font:inherit; font-size:12px; padding:4px 12px; border-radius:8px; cursor:pointer; }
       .seg button.on { background:color-mix(in srgb, var(--primary-color, #0abfbf) 25%, transparent); color:var(--primary-text-color); font-weight:600; }
       .cnt { font-size:12px; color:var(--secondary-text-color); }
+      .seg.vw button { display:flex; align-items:center; gap:5px; } .seg.vw ha-icon { --mdc-icon-size:15px; }
+      @container (max-width: 520px) { .seg.vw span { display:none; } }
+      .tl { margin-top:10px; }
+      .tlh { display:flex; justify-content:space-between; font-size:11px; color:var(--secondary-text-color); margin-bottom:4px; }
+      .tlc { position:relative; height:220px; padding-top:26px; }
+      .gl { position:absolute; left:0; right:0; border-top:1px dashed color-mix(in srgb, var(--primary-text-color) 12%, transparent); pointer-events:none; margin-bottom:18px; }
+      .gl b { position:absolute; right:0; top:-14px; font-size:10px; font-weight:400; color:var(--secondary-text-color); }
+      .cols { position:absolute; inset:26px 0 0 0; display:flex; align-items:stretch; gap:3px; }
+      .col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; border-radius:6px; position:relative; }
+      .col:hover, .col.on { background:color-mix(in srgb, var(--primary-text-color) 6%, transparent); }
+      .col em { height:18px; flex:none; font-style:normal; font-size:10px; color:var(--secondary-text-color); text-align:center; white-space:nowrap; overflow:visible; line-height:18px; }
+      .stk { display:flex; flex-direction:column-reverse; gap:1px; min-height:0; position:relative; margin:0 12%; transition:height .6s ease; }
+      .stk i { display:block; min-height:1px; border-radius:2px; }
+      .dom { position:absolute; left:50%; bottom:100%; transform:translate(-50%, -3px); width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+             background:color-mix(in srgb, var(--c) 22%, var(--card-background-color, #1c1c1c)); color:var(--c); box-shadow:0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent); }
+      .dom ha-icon { --mdc-icon-size:13px; }
+      @container (max-width: 520px) { .dom { width:16px; height:16px; } .dom ha-icon { --mdc-icon-size:11px; } .cols { gap:1px; } }
+      .tip { position:absolute; top:0; z-index:3; min-width:210px; max-width:280px; padding:8px 10px; border-radius:12px; font-size:12px; pointer-events:none;
+             background:var(--card-background-color, #1c1c1c); color:var(--primary-text-color); box-shadow:0 6px 24px rgba(0,0,0,.35); border:1px solid color-mix(in srgb, var(--primary-text-color) 10%, transparent); }
+      .tip .th { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; } .tip .th b { text-transform:capitalize; } .tip .th span { color:var(--secondary-text-color); white-space:nowrap; }
+      .tip .tr { display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; align-items:center; gap:6px; padding:2px 0; }
+      .tip .ti { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, var(--c) 22%, transparent); color:var(--c); }
+      .tip .ti ha-icon { --mdc-icon-size:13px; } .tip .tn { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .tip em { font-style:normal; color:var(--secondary-text-color); } .tip .tm { color:var(--secondary-text-color); font-size:11px; margin-top:2px; }
+      .tll { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+      .lc { display:flex; align-items:center; gap:6px; border:none; cursor:pointer; font:inherit; font-size:12px; padding:3px 9px 3px 3px; border-radius:14px;
+            color:var(--primary-text-color); background:color-mix(in srgb, var(--c) 14%, transparent); }
+      .lc small { color:var(--secondary-text-color); } .lc.off { opacity:.4; }
+      .lc .li { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--c); color:#fff; }
+      .lc .li ha-icon { --mdc-icon-size:14px; }
+      .tln { font-size:11px; color:var(--secondary-text-color); margin-top:8px; }
       .list { display:grid; grid-template-columns:1fr; column-gap:22px; }
       @container (min-width: 820px) { .list { grid-template-columns:1fr 1fr; } }
       .row { display:grid; grid-template-columns:auto minmax(0,1fr) auto 76px 62px; align-items:center; gap:10px; padding:7px 4px; border-radius:10px; cursor:pointer;
@@ -998,13 +1083,87 @@ class HolmEnergyDevicesCard extends HTMLElement {
     const sr = this.shadowRoot;
     sr.querySelectorAll(".row[data-e]").forEach((r) => r.addEventListener("click", () => {
       const x = (this._data?.rows || []).find((q) => q.entity === r.dataset.e); if (!x) return;
-      const all = this._data.rows.reduce((a, q) => [a[0] + q.kwh, a[1] + q.eur], [0, 0]);
-      const price = x.kwh > 0.001 ? x.eur / x.kwh : all[0] > 0 ? all[1] / all[0] : 0;
+      // coût réel recalculé sur la période choisie dans le graphique (et non le prix moyen de la période de la carte)
       openEnergyChart(this._hass, { mode: "energy", name: x.name, subtitle: "Consommation de l'appareil", icon: x.icon, color: x.color,
-        energy: [x.entity], power: x.power || null, entity: x.power || x.entity, price });
+        energy: [x.entity], power: x.power || null, entity: x.power || x.entity, costFor: (s0, e0) => this._costFor(x.entity, s0, e0) });
     }));
-    sr.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => { this._sort = b.dataset.s; this._render(); }));
+    sr.querySelectorAll(".seg.so button").forEach((b) => b.addEventListener("click", () => { this._sort = b.dataset.s; this._render(); }));
+    sr.querySelectorAll(".seg.vw button").forEach((b) => b.addEventListener("click", () => { this._view = b.dataset.v; this._render(); }));
+    this._bindTimeline(sr);
     sr.querySelector(".more")?.addEventListener("click", () => { this._all = !this._all; this._render(); });
+  }
+  // ---- vue « Dans le temps » : tous les appareils empilés dans un même graphique, icône de l'appareil dominant
+  _layers(d, rows, showUnk) {
+    const maxLayers = Math.max(3, Number(this._c.timeline_devices) || 8);
+    const byK = rows.filter((x) => x.kwh > 0).sort((a, b) => b.kwh - a.kwh);
+    const L = byK.slice(0, maxLayers).map((x) => ({ key: x.entity, name: x.name, icon: x.icon, color: x.color, s: x.series, e: x.seriesEur, kwh: x.kwh, entity: x.entity }));
+    const rest = byK.slice(maxLayers);
+    if (rest.length) L.push({ key: "_autres", name: `Autres (${rest.length})`, icon: "mdi:dots-horizontal-circle-outline", color: "color-mix(in srgb, var(--primary-text-color) 35%, transparent)",
+      s: d.buckets.list.map((_, i) => rest.reduce((a, x) => a + x.series[i], 0)), e: d.buckets.list.map((_, i) => rest.reduce((a, x) => a + x.seriesEur[i], 0)), kwh: rest.reduce((a, x) => a + x.kwh, 0) });
+    if (showUnk) L.push({ key: "_unk", name: "Non mesuré", icon: "mdi:help-circle-outline", color: UNM, s: d.unkSeries, e: d.unkSeriesEur, kwh: d.unk, dash: true });
+    return L;
+  }
+  _bLabel(t, g, long = false) {
+    const d = new Date(t);
+    if (g === "hour") return long ? d.toLocaleString("fr-FR", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : `${d.getHours()}h`;
+    if (g === "day") return d.toLocaleDateString("fr-FR", long ? { weekday: "long", day: "numeric", month: "long" } : { weekday: "short", day: "numeric" });
+    return d.toLocaleDateString("fr-FR", long ? { month: "long", year: "numeric" } : { month: "short" });
+  }
+  _timeline(d, rows, showUnk) {
+    const B = d.buckets, n = B.list.length;
+    if (!n) return `<div class="empty">Aucune donnée sur cette période.</div>`;
+    const L = this._layers(d, rows, showUnk);
+    this._tl = { L, B };
+    const on = L.filter((l) => !this._hidden.has(l.key));
+    const tot = B.list.map((_, i) => on.reduce((a, l) => a + (l.s[i] || 0), 0));
+    const nice = (m) => { const p = Math.pow(10, Math.floor(Math.log10(m || 1))); const k = m / p; return (k <= 1 ? 1 : k <= 2 ? 2 : k <= 5 ? 5 : 10) * p; };
+    const top = nice(Math.max(...tot, 1e-6) * 1.05);
+    const every = n <= 12 ? 1 : n <= 24 ? (B.g === "hour" ? 3 : 2) : n <= 40 ? 5 : 7;
+    const icons = n <= 31;
+    const cols = B.list.map((b, i) => {
+      const segs = on.map((l) => ({ l, v: l.s[i] || 0 })).filter((x) => x.v > 0);
+      // icône de l'appareil qui consomme le plus sur ce créneau (« Autres » et « Non mesuré » ne comptent pas)
+      const dom = segs.filter((x) => x.l.entity).reduce((a, x) => (!a || x.v > a.v ? x : a), null);
+      const h = (tot[i] / top) * 100;
+      return `<div class="col" data-i="${i}"><div class="stk" style="height:${h.toFixed(2)}%">
+        ${icons && dom && h > 0 ? `<span class="dom" style="--c:${dom.l.color}" title="${dom.l.name}"><ha-icon icon="${dom.l.icon}"></ha-icon></span>` : ""}
+        ${segs.map((x) => `<i class="${x.l.dash ? "dash" : ""}" style="flex:${x.v};background:${x.l.color}"></i>`).join("")}</div>
+        <em>${i % every === 0 ? this._bLabel(b.t, B.g) : ""}</em></div>`;
+    }).join("");
+    const unit = { hour: "heure", day: "jour", month: "mois" }[B.g];
+    return `<div class="tl">
+      <div class="tlh"><span>kWh par ${unit}</span><span class="tly">${fr(top, top < 10 ? 1 : 0)}</span></div>
+      <div class="tlc"><div class="gl" style="bottom:50%"><b>${fr(top / 2, top < 10 ? 1 : 0)}</b></div><div class="gl" style="bottom:100%"></div>
+        <div class="cols">${cols}</div><div class="tip" hidden></div></div>
+      <div class="tll">${L.map((l) => `<button class="lc ${this._hidden.has(l.key) ? "off" : ""}" data-k="${l.key}" style="--c:${l.color}" title="Afficher / masquer">
+        <span class="li ${l.dash ? "dash" : ""}"><ha-icon icon="${l.icon}"></ha-icon></span>${l.name}<small>${fr(l.kwh, l.kwh < 10 ? 1 : 0)} kWh</small></button>`).join("")}</div>
+      <div class="tln">Touchez une barre pour le détail, une étiquette pour masquer un appareil.</div></div>`;
+  }
+  _bindTimeline(sr) {
+    const box = sr.querySelector(".tl"); if (!box || !this._tl) return;
+    const { L, B } = this._tl, tip = box.querySelector(".tip"), wrap = box.querySelector(".tlc");
+    box.querySelectorAll(".lc").forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.k;
+      if (this._hidden.has(k)) this._hidden.delete(k); else if (L.filter((l) => !this._hidden.has(l.key)).length > 1) this._hidden.add(k);
+      this._render();
+    }));
+    const show = (col) => {
+      const i = +col.dataset.i, b = B.list[i];
+      const items = L.filter((l) => !this._hidden.has(l.key)).map((l) => ({ l, v: l.s[i] || 0, e: (l.e && l.e[i]) || 0 })).filter((x) => x.v >= 0.0005).sort((a, c) => c.v - a.v);
+      const tv = items.reduce((a, x) => a + x.v, 0), te = items.reduce((a, x) => a + x.e, 0);
+      box.querySelectorAll(".col.on").forEach((c) => c.classList.remove("on")); col.classList.add("on");
+      tip.innerHTML = `<div class="th"><b>${this._bLabel(b.t, B.g, true)}</b><span>${fr(tv, tv < 10 ? 2 : 1)} kWh · ${fr(te, 2)} €</span></div>
+        ${items.length ? items.slice(0, 8).map((x) => `<div class="tr"><span class="ti" style="--c:${x.l.color}"><ha-icon icon="${x.l.icon}"></ha-icon></span><span class="tn">${x.l.name}</span><b>${fr(x.v, x.v < 10 ? 2 : 1)} kWh</b><em>${fr(x.e, 2)} €</em></div>`).join("")
+          + (items.length > 8 ? `<div class="tm">+ ${items.length - 8} autres</div>` : "") : `<div class="tm">Aucune consommation</div>`}`;
+      tip.hidden = false;
+      const wr = wrap.getBoundingClientRect(), cr = col.getBoundingClientRect(), tw = tip.offsetWidth;
+      tip.style.left = `${Math.max(0, Math.min(wr.width - tw, cr.left - wr.left + cr.width / 2 - tw / 2))}px`;
+    };
+    box.querySelectorAll(".col").forEach((c) => {
+      c.addEventListener("click", () => show(c));
+      c.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") show(c); });
+    });
+    wrap.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") { tip.hidden = true; box.querySelectorAll(".col.on").forEach((c) => c.classList.remove("on")); } });
   }
   static getConfigElement() { return document.createElement("holm-energy-devices-card-editor"); }
   static getStubConfig() { return { title: "Consommation par appareil" }; }
@@ -1017,6 +1176,7 @@ const L = { title: "Titre", collection_key: "Clé du sélecteur de date (vide = 
   cost_mode: "Calcul du coût", price: "Prix fixe (€/kWh)", taxes_import: "Taxes ajoutées au prix réseau (€/kWh)",
   top: "Appareils affichés avant « Voir tout »", sort: "Tri par défaut", hide_zero: "Masquer les appareils à 0",
   show_unmeasured: "Afficher le « Non mesuré »", show_sparkline: "Afficher les mini-graphes", exclude: "Appareils à exclure",
+  view: "Vue par défaut", timeline_devices: "Appareils détaillés dans « Dans le temps »",
   entity: "Entité énergie (kWh)", name: "Libellé", icon: "Icône", color: "Couleur", power: "Entité puissance (clic)" };
 const hex2rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); if (!m) return undefined; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const rgb2hex = (a) => Array.isArray(a) ? "#" + a.map((v) => Number(v).toString(16).padStart(2, "0")).join("") : a;
@@ -1033,6 +1193,10 @@ const GEN = [
     { name: "taxes_import", selector: { entity: { multiple: true, domain: PRICE_DOM } } },
   ] },
   { type: "expandable", title: "Affichage", icon: "mdi:format-list-bulleted", flatten: true, schema: [
+    { type: "grid", name: "", schema: [
+      { name: "view", selector: { select: { mode: "dropdown", options: [{ value: "list", label: "Appareils (liste)" }, { value: "timeline", label: "Dans le temps (graphique)" }] } } },
+      { name: "timeline_devices", selector: { number: { min: 3, max: 20, mode: "box" } } },
+    ] },
     { type: "grid", name: "", schema: [
       { name: "top", selector: { number: { min: 1, max: 100, mode: "box" } } },
       { name: "sort", selector: { select: { mode: "dropdown", options: [{ value: "kwh", label: "kWh" }, { value: "eur", label: "€" }, { value: "name", label: "Nom" }] } } },
@@ -1052,7 +1216,7 @@ const DEV = [
     { name: "color", selector: { color_rgb: {} } },
   ] },
 ];
-const DEFAULTS = { cost_mode: "real", top: 10, sort: "kwh", hide_zero: true, show_unmeasured: true, show_sparkline: true, show_frame: true };
+const DEFAULTS = { view: "list", timeline_devices: 8, cost_mode: "real", top: 10, sort: "kwh", hide_zero: true, show_unmeasured: true, show_sparkline: true, show_frame: true };
 class HolmEnergyDevicesCardEditor extends HTMLElement {
   setConfig(c) {
     const j = JSON.stringify(c);
@@ -2273,4 +2437,4 @@ window.customCards = window.customCards || [];
 window.customCards.push({ type: "holm-energy-years-card", name: "HOLM – Totaux annuels", description: "Totaux annuels d'une statistique d'énergie, en frise verticale" });
 })();
 
-console.info("%c HOLM-ENERGY-CARDS %c 1.1.1 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
+console.info("%c HOLM-ENERGY-CARDS %c 1.2.0 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");

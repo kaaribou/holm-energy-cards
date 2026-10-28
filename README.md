@@ -19,7 +19,19 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
 
-### 🆕 Nouveautés de la 1.1.0
+### 🆕 Nouveautés de la 1.2.0
+
+**🕒 Vue « Dans le temps ».** *Consommation par appareil* peut maintenant afficher tous les appareils dans **un même graphique** : barres empilées par heure, par jour ou par mois, avec **l'icône de l'appareil qui consomme le plus** au-dessus de chaque barre. On voit d'un coup d'œil **qui consomme et quand**.
+
+![Dans le temps](docs/images/dans-le-temps.png)
+
+- survol (ou toucher) d'une barre : détail par appareil ;
+- légende cliquable pour masquer ou réafficher un appareil ;
+- options `view: timeline` et `timeline_devices` (nombre d'appareils détaillés, les autres sont regroupés).
+
+**💶 Coût juste dans le graphique d'un appareil.** Le coût du graphique (24 h, 7 j, 30 j, 12 mois ou dates au choix) est maintenant recalculé **heure par heure au prix réel** sur la période du graphique, au lieu de reprendre le prix moyen de la période affichée par la carte. Le coût de chaque barre s'affiche au survol. La carte calcule aussi à l'heure jusqu'à 31 jours.
+
+### Nouveautés de la 1.1.0
 
 **📈 Un graphique pour chaque appareil.** Dans *Consommation par appareil*, un toucher sur un appareil ouvre son graphique :
 
@@ -100,7 +112,8 @@ subscription_period: month
 - kWh, part et **coût** de chaque appareil, mini-graphe, tri par kWh, € ou nom, « Voir tout ».
 - **Non mesuré** : ce que consomme la maison en dehors des appareils suivis.
 - Coût **réel** (prix réseau de chaque heure, solaire gratuit), **réseau** (comme si tout venait du réseau) ou **fixe**.
-- **Graphique par appareil** : un toucher sur un appareil ouvre sa consommation sur 24 h, 7 j, 30 j, 12 mois ou les dates de votre choix, avec total, coût estimé, moyenne et pic. Le coût estimé utilise le prix moyen de l'appareil sur la période affichée par la carte.
+- **Graphique par appareil** : un toucher sur un appareil ouvre sa consommation sur 24 h, 7 j, 30 j, 12 mois ou les dates de votre choix, avec total, coût, moyenne et pic. Le coût est recalculé heure par heure au prix réel sur la période du graphique.
+- **Vue « Dans le temps »** (`view: timeline`) : tous les appareils empilés dans un même graphique, avec l'icône de celui qui consomme le plus au-dessus de chaque barre.
 
 ```yaml
 type: custom:holm-energy-devices-card
@@ -111,6 +124,8 @@ top: 8
 
 | Option | Description | Par défaut |
 |---|---|---|
+| `view` | `list` (liste des appareils) ou `timeline` (« Dans le temps ») | `list` |
+| `timeline_devices` | Appareils détaillés dans la vue « Dans le temps » (les autres sont regroupés) | `8` |
 | `cost_mode` | `real`, `grid` ou `fixed` | `real` |
 | `price` | Prix fixe (mode `fixed`), nombre ou entité | — |
 | `taxes_import` | Taxes ajoutées au prix réseau (€/kWh) | — |
