@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2
+- **Abonnement et taxes lus dans HOLM HP/HC** (#4) : si l'intégration [HOLM HP/HC](https://github.com/kaaribou/holm-tarif) est installée, *Bilan énergétique* y lit l'abonnement mensuel, la CSPE / accise, la TCFE et la taxe sur la revente ; *Consommation par appareil* et *Chauffage & climatisation* y lisent la CSPE et la TCFE. Les valeurs renseignées dans une carte restent prioritaires ; `holm_tarif: false` désactive la lecture automatique.
+- **Plus d'erreur `statistic_ids` à l'ajout d'une carte** (#5) : une carte sans entité choisie, ou un tableau Énergie pas encore configuré, n'interroge plus les statistiques et affiche « Choisissez une entité dans l'éditeur de la carte, ou configurez d'abord le tableau Énergie de Home Assistant. »
+
 ## 1.2.1
 - **Coûts justes avec Tempo et les prix variables** : quand une source du tableau Énergie a une entité de prix, les cartes utilisent maintenant le coût que Home Assistant enregistre heure par heure pour cette source (`sensor.<source>_cost`, `sensor.<revente>_compensation`), comme le tableau Énergie officiel. Avant, le prix actuel était appliqué à tout l'historique : avec Tempo ou après un changement de tarif, les coûts passés étaient faux. Concerne *Consommation par appareil*, *Chauffage & climatisation* et *Bilan énergétique*.
 - Pour les heures antérieures au coût enregistré, le prix actuel × kWh sert de secours.

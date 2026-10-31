@@ -19,7 +19,13 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
 
-### 🆕 Nouveautés de la 1.2.1
+### 🆕 Nouveautés de la 1.2.2
+
+**🧾 Abonnement et taxes lus dans [HOLM HP/HC](https://github.com/kaaribou/holm-tarif).** Si l'intégration HOLM HP/HC est installée, *Bilan énergétique*, *Consommation par appareil* et *Chauffage & climatisation* y lisent automatiquement l'abonnement mensuel, la CSPE / accise, la TCFE et la taxe sur la revente. Plus besoin de les renseigner dans chaque carte. Les valeurs indiquées dans une carte restent prioritaires, et `holm_tarif: false` désactive la lecture automatique.
+
+**🩹 Plus d'erreur à l'ajout d'une carte.** Une carte tout juste ajoutée (entité pas encore choisie) ou un tableau Énergie pas encore configuré affichaient `Erreur : length of value must be at least 1 at 'statistic_ids'`. La carte affiche maintenant simplement quoi faire.
+
+### Nouveautés de la 1.2.1
 
 **💶 Coûts justes avec Tempo et les prix qui changent.** Les cartes reprennent maintenant les **coûts enregistrés par Home Assistant** pour chaque source du tableau Énergie, calculés heure par heure au prix du moment, comme le tableau Énergie officiel. Avant, quand une source avait une entité de prix, la carte appliquait le prix **actuel** à tout l'historique : avec Tempo (bleu, blanc, rouge) ou après un changement de tarif, les coûts passés étaient faux. Concerne *Consommation par appareil*, *Chauffage & climatisation* et *Bilan énergétique*.
 
@@ -102,9 +108,10 @@ subscription_period: month
 | Option | Description | Par défaut |
 |---|---|---|
 | `items` | Sources : `type` (`solar`, `import`, `export`), `entity` (kWh), `name`, `cost_entity` ou `price`, `color`, `icon` (**obligatoire**) | — |
-| `subscription`, `subscription_period` | Abonnement (nombre ou entité) et sa période (`month` / `year`) | — |
-| `taxes_import` | Taxes ajoutées aux kWh achetés (€/kWh, nombre ou entités) | — |
-| `tax_export` | Taxe déduite des kWh revendus (€/kWh) | — |
+| `subscription`, `subscription_period` | Abonnement (nombre ou entité) et sa période (`month` / `year`) | HOLM HP/HC si installée |
+| `taxes_import` | Taxes ajoutées aux kWh achetés (€/kWh, nombre ou entités) | HOLM HP/HC si installée |
+| `tax_export` | Taxe déduite des kWh revendus (€/kWh) | HOLM HP/HC si installée |
+| `holm_tarif` | `false` : ne pas lire l'abonnement et les taxes dans HOLM HP/HC | `true` |
 | `self_price` | Valeur du kWh autoconsommé | prix moyen d'achat |
 | `self_name` | Libellé de l'autoconsommation | `Consommée sur place` |
 
@@ -132,7 +139,8 @@ top: 8
 | `timeline_devices` | Appareils détaillés dans la vue « Dans le temps » (les autres sont regroupés) | `8` |
 | `cost_mode` | `real`, `grid` ou `fixed` | `real` |
 | `price` | Prix fixe (mode `fixed`), nombre ou entité | — |
-| `taxes_import` | Taxes ajoutées au prix réseau (€/kWh) | — |
+| `taxes_import` | Taxes ajoutées au prix réseau (€/kWh) | HOLM HP/HC si installée |
+| `holm_tarif` | `false` : ne pas lire les taxes dans HOLM HP/HC | `true` |
 | `top` | Appareils affichés avant « Voir tout » | `10` |
 | `sort` | `kwh`, `eur` ou `name` | `kwh` |
 | `hide_zero`, `show_unmeasured`, `show_sparkline` | Masquer les appareils à 0, afficher le non mesuré, les mini-graphes | `true` |
@@ -249,6 +257,8 @@ Les cartes ne lisent pas vos utility meters ni de tarif à elles : elles reprenn
 - `cost_mode: grid` : coût réseau de l'heure ÷ kWh achetés, comme si tout venait du réseau. C'est le mode à choisir pour comparer avec des compteurs par tarif ;
 - `cost_mode: fixed` : le prix `price`.
 
+Les **taxes** (CSPE / accise, TCFE) et, dans *Bilan énergétique*, l'**abonnement** et la **taxe sur la revente** viennent des options de la carte ou, à défaut, de [HOLM HP/HC](https://github.com/kaaribou/holm-tarif) si elle est installée.
+
 Dans *Bilan énergétique*, chaque source utilise `cost_entity`, sinon le coût enregistré par Home Assistant pour son entité, sinon `price`. Un `price` fixe (nombre) reste prioritaire sur le coût enregistré.
 
 ---
@@ -258,7 +268,7 @@ Dans *Bilan énergétique*, chaque source utilise `cost_entity`, sinon le coût 
 | Problème | Solution |
 |---|---|
 | Une carte reste sur « aujourd'hui » | Ajoutez une carte **Sélecteur de date énergie** (`energy-date-selection`) dans la même vue. |
-| Pas d'appareils ou de sources | Configurez d'abord le **tableau de bord Énergie** de Home Assistant. |
+| Pas d'appareils ou de sources, ou « Choisissez une entité… » | Choisissez les entités dans l'éditeur de la carte, ou configurez d'abord le **tableau de bord Énergie** de Home Assistant. |
 | Les coûts sont à 0 | Indiquez un prix (entité ou nombre) pour vos sources réseau, dans le tableau Énergie ou dans la carte. |
 | Les coûts ne correspondent pas à mes compteurs HP / HC | Voir [D'où viennent les prix ?](#-doù-viennent-les-prix-) : en mode `real`, le solaire est compté gratuit ; essayez `cost_mode: grid`. |
 | Pas de courbe de puissance dans le graphique d'un appareil | Associez un capteur de puissance à l'appareil (tableau Énergie, ou `power` dans `devices`). |

@@ -1,4 +1,4 @@
-/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.2.1
+/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.2.2
  * Bilan énergétique, consommation par appareil, production & consommation, chauffage & climatisation,
  * énergie par année (barres) et totaux annuels (frise). Un seul fichier, six cartes.
  */
@@ -46,6 +46,29 @@ const DEF = {
   solar: { color: "#e3a21a", icon: "mdi:solar-power-variant", label: "Production" },
   import: { color: "#4a90d9", icon: "mdi:transmission-tower-import", label: "Achat réseau" },
   export: { color: "#9b6fd6", icon: "mdi:transmission-tower-export", label: "Revente" },
+};
+window.__holmNoEntity = window.__holmNoEntity || "Choisissez une entité dans l'éditeur de la carte, ou configurez d'abord le tableau Énergie de Home Assistant.";
+// Statistiques : jamais d'appel sans entité (carte tout juste ajoutée, tableau Énergie pas encore configuré).
+window.__holmStats = window.__holmStats || function (hass, msg) {
+  const ids = [...new Set((msg.statistic_ids || []).filter(Boolean))];
+  if (!ids.length) return Promise.reject(new Error(window.__holmNoEntity));
+  return hass.callWS({ ...msg, statistic_ids: ids });
+};
+// HOLM HP/HC (holm_tarif) : abonnement mensuel, CSPE / accise, TCFE et taxe sur la revente, lus automatiquement.
+window.__holmTarif = window.__holmTarif || function (hass) {
+  if (!hass) return null;
+  let st = null;
+  for (const e of Object.values(hass.entities || {})) if (e.platform === "holm_tarif") { const s = hass.states[e.entity_id]; if (s && s.attributes && s.attributes.reglages) { st = s; break; } }
+  if (!st) { const s = hass.states["sensor.tarif_actuel"]; if (s && s.attributes && "cspe" in s.attributes) st = s; }
+  if (!st) return null;
+  const a = st.attributes, rg = a.reglages || {};
+  const pick = (k) => (rg[k] && hass.states[rg[k]] ? rg[k] : a[k] ?? null);
+  return { entity: st.entity_id, subscription: pick("abonnement_mensuel"), taxes: ["cspe", "tcfe"].map(pick).filter((x) => x !== null), tax_export: pick("taxe_revente") };
+};
+window.__holmTaxes = window.__holmTaxes || function (c, hass) {
+  if (c.taxes_import) return Array.isArray(c.taxes_import) ? c.taxes_import : [c.taxes_import];
+  const t = c.holm_tarif === false ? null : window.__holmTarif(hass);
+  return t ? t.taxes : [];
 };
 // Coûts enregistrés par Home Assistant pour chaque source du tableau Énergie (sensor.xxx_cost, sensor.xxx_compensation),
 // calculés heure par heure au prix du moment : justes même quand le prix change (Tempo, HP/HC, changement de tarif).
@@ -109,7 +132,7 @@ class HolmEnergySourcesCard extends HTMLElement {
       const cs = await window.__holmEnergyCosts(this._hass);
       const items = this._c.items.map((i) => ({ i, cost: i.cost_entity || (typeof i.price === "number" ? null : cs[i.entity]) || null }));
       const ids = [...new Set(items.flatMap((x) => [x.i.entity, x.cost]).filter(Boolean))];
-      const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+      const r = await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
         statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
       const sum = (id) => (r[id] || []).reduce((a, s) => a + (Number(s.change) || 0), 0);
       const rows = (id) => new Map((r[id] || []).map((s) => [+new Date(s.start), Number(s.change) || 0]));
@@ -151,11 +174,13 @@ class HolmEnergySourcesCard extends HTMLElement {
     // Facture estimée
     const rs = this._range?.start, re = this._range?.end || (rs ? new Date(rs.getTime() + 86400000) : null);
     const days = rs && re ? Math.max(0, (re - rs) / 86400000) : 0;
-    const subV = this._num(c.subscription);
-    const sub = isNaN(subV) ? 0 : (c.subscription_period === "year" ? subV / 365 : (subV * 12) / 365) * days;
-    const taxRate = (Array.isArray(c.taxes_import) ? c.taxes_import : c.taxes_import ? [c.taxes_import] : []).reduce((a, e) => a + (this._num(e) || 0), 0);
+    // vide dans la carte : abonnement et taxes lus dans HOLM HP/HC si l'intégration est installée (holm_tarif: false pour ne pas les utiliser)
+    const ht = c.holm_tarif === false ? null : window.__holmTarif(this._hass);
+    const subV = this._num(c.subscription ?? ht?.subscription), subPer = c.subscription ? c.subscription_period : "month";
+    const sub = isNaN(subV) ? 0 : (subPer === "year" ? subV / 365 : (subV * 12) / 365) * days;
+    const taxRate = window.__holmTaxes(c, this._hass).reduce((a, e) => a + (this._num(e) || 0), 0);
     const taxImp = taxRate * imp;
-    const taxExp = (this._num(c.tax_export) || 0) * exp;
+    const taxExp = (this._num(c.tax_export ?? ht?.tax_export) || 0) * exp;
     const hasBill = !isNaN(subV) || taxRate > 0 || taxExp > 0;
     const net = cImp + sub + taxImp - (cExp - taxExp);
     const avgBuy = imp > 0 ? cImp / imp : NaN;
@@ -235,7 +260,7 @@ class HolmEnergySourcesCard extends HTMLElement {
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
       <div class="hd"><div class="tt">${c.title || ""}</div>
         <div class="pd" title="${this._linked ? "Suit le sélecteur de date" : "Aucun sélecteur de date trouvé : aujourd'hui"}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div></div>
-      ${this._err ? `<div class="err">Erreur : ${this._err}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : "Erreur : "}${this._err}</div>` : ""}
       <div class="kpis">
         ${kpi(DEF.solar.icon, DEF.solar.color, "Production", `${fr(prod, 1)} <small>kWh</small>`, "")}
         ${kpi(DEF.import.icon, DEF.import.color, "Achat réseau", `${fr(imp, 1)} <small>kWh</small>`, `${fr(cImp, 2)} €`)}
@@ -270,8 +295,8 @@ class HolmEnergySourcesCard extends HTMLElement {
 }
 
 // ---------------- Éditeur visuel ----------------
-const L = { subscription: "Abonnement (€)", subscription_period: "Montant de l'abonnement", taxes_import: "Taxes sur les kWh achetés (€/kWh)",
-  tax_export: "Taxe sur les kWh revendus (€/kWh)", self_price: "Valeur du kWh autoconsommé (vide = prix moyen d'achat)", self_name: "Libellé de l'autoconsommation",
+const L = { subscription: "Abonnement (€) — vide : HOLM HP/HC si installée", subscription_period: "Montant de l'abonnement", taxes_import: "Taxes sur les kWh achetés (€/kWh) — vide : HOLM HP/HC si installée",
+  tax_export: "Taxe sur les kWh revendus (€/kWh) — vide : HOLM HP/HC si installée", self_price: "Valeur du kWh autoconsommé (vide = prix moyen d'achat)", self_name: "Libellé de l'autoconsommation",
   title: "Titre", collection_key: "Clé du sélecteur de date (vide = défaut)", show_frame: "Afficher le cadre de la carte",
   type: "Type", entity: "Entité énergie (kWh)", name: "Libellé", cost_entity: "Statistique de coût / compensation (€)", price: "Ou prix unitaire (€/kWh)", icon: "Icône", color: "Couleur" };
 const hex2rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); if (!m) return undefined; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -501,7 +526,7 @@ if (!customElements.get("holm-energy-chart-v2")) {
     }
     async _stats(ids, start, end, period, types) {
       if (!ids.length) return {};
-      return this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+      return window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
         statistic_ids: ids, period, types, units: { energy: "kWh", power: "W" } });
     }
     async _load() {
@@ -848,7 +873,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
     const span = (end - start) / 86400000;
     const period = span <= 31 ? "hour" : "day";
     const ids = [...new Set([...devs.map((d) => d.entity), ...grids.map((g) => g.id), ...grids.map((g) => g.cost), ...solars, ...exports].filter(Boolean))];
-    const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+    const r = await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
       statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
     const slots = new Set();
     const ser = (id) => { const m = new Map(); for (const s of r[id] || []) { const t = +new Date(s.start); slots.add(t); m.set(t, (m.get(t) || 0) + (Number(s.change) || 0)); } return m; };
@@ -856,7 +881,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
     const gS = grids.map((g) => ({ kwh: ser(g.id), cost: g.cost ? ser(g.cost) : null, price: g.price }));
     const solS = solars.map(ser), expS = exports.map(ser);
     const T = [...slots].sort((a, b) => a - b);
-    const tax = (Array.isArray(c.taxes_import) ? c.taxes_import : c.taxes_import ? [c.taxes_import] : []).reduce((a, e) => a + (this._num(e) || 0), 0);
+    const tax = window.__holmTaxes(c, this._hass).reduce((a, e) => a + (this._num(e) || 0), 0);
     const fixed = this._num(c.price);
     const price = new Map(), home = new Map();
     let impTot = 0, costTot = 0;
@@ -1091,7 +1116,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
       <div class="hd"><div class="tt">${c.title || ""}</div>
         <div class="pd" title="${this._linked ? "Suit le sélecteur de date" : "Aucun sélecteur de date trouvé : aujourd'hui"}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div></div>
-      ${this._err ? `<div class="err">Erreur : ${this._err}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : "Erreur : "}${this._err}</div>` : ""}
       ${body}
     </ha-card>`;
     const sr = this.shadowRoot;
@@ -1187,7 +1212,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
 
 // ---------------- Éditeur visuel ----------------
 const L = { title: "Titre", collection_key: "Clé du sélecteur de date (vide = défaut)", show_frame: "Afficher le cadre de la carte",
-  cost_mode: "Calcul du coût", price: "Prix fixe (€/kWh)", taxes_import: "Taxes ajoutées au prix réseau (€/kWh)",
+  cost_mode: "Calcul du coût", price: "Prix fixe (€/kWh)", taxes_import: "Taxes ajoutées au prix réseau (€/kWh) — vide : HOLM HP/HC si installée",
   top: "Appareils affichés avant « Voir tout »", sort: "Tri par défaut", hide_zero: "Masquer les appareils à 0",
   show_unmeasured: "Afficher le « Non mesuré »", show_sparkline: "Afficher les mini-graphes", exclude: "Appareils à exclure",
   view: "Vue par défaut", timeline_devices: "Appareils détaillés dans « Dans le temps »",
@@ -1425,7 +1450,7 @@ class HolmSolarChartCard extends HTMLElement {
         const period = span <= 2 ? "5minute" : span <= 14 ? "hour" : "day";
         const sId = c.solar_power || src.solarRate, gId = c.grid_power || src.gridRate;
         const ids = [sId, gId].filter(Boolean);
-        const r = ids.length ? await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+        const r = ids.length ? await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
           statistic_ids: ids, period, types: ["mean", "max"], units: { power: "W" } }) : {};
         const T = this._slots(start, fullEnd, period);
         const pick = (id, k) => { const m = new Map((r[id] || []).map((s) => [+new Date(s.start), s[k]])); return T.map((t) => (m.has(t) ? Number(m.get(t)) : null)); };
@@ -1439,7 +1464,7 @@ class HolmSolarChartCard extends HTMLElement {
       } else {
         const period = span <= 3 ? "hour" : span <= 93 ? "day" : "month";
         const ids = [...new Set([...src.solar, ...src.grids, ...src.exports])];
-        const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+        const r = await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
           statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
         const T = this._slots(start, fullEnd, period);
         const ser = (id) => { const m = new Map(); for (const s of r[id] || []) { const t = +new Date(s.start); m.set(t, (m.get(t) || 0) + Math.max(0, Number(s.change) || 0)); } return T.map((t) => m.get(t) || 0); };
@@ -1663,7 +1688,7 @@ class HolmSolarChartCard extends HTMLElement {
           <div class="pd" title="${this._linked ? "Suit le sélecteur de date" : "Aucun sélecteur de date trouvé : aujourd'hui"}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div>
           ${c.show_tabs !== false ? `<div class="seg">${[["energy", "mdi:chart-bar", "Énergie"], ["power", "mdi:chart-bell-curve", "Puissance"]].map(([k, ic, l]) => `<button data-m="${k}" class="${this._mode === k ? "on" : ""}"><ha-icon icon="${ic}"></ha-icon>${l}</button>`).join("")}</div>` : ""}
         </div></div>
-      ${this._err ? `<div class="err">Erreur : ${this._err}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : "Erreur : "}${this._err}</div>` : ""}
       ${chips}
       <div class="cw">${chart}<div class="tip"></div></div>
     </ha-card>`;
@@ -1848,10 +1873,10 @@ class HolmClimateEnergyCard extends HTMLElement {
       }
     }
     const ids = [...new Set([...roomIds, ...grids.map((g) => g.id), ...grids.map((g) => g.cost), ...solars, ...exports].filter(Boolean))];
-    const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
+    const r = await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
       statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
     const ser = (id) => { const m = new Map(); for (const s of r[id] || []) { const t = +new Date(s.start); m.set(t, (m.get(t) || 0) + Math.max(0, Number(s.change) || 0)); } return m; };
-    const tax = (Array.isArray(c.taxes_import) ? c.taxes_import : c.taxes_import ? [c.taxes_import] : []).reduce((a, e) => a + (this._num(e) || 0), 0);
+    const tax = window.__holmTaxes(c, this._hass).reduce((a, e) => a + (this._num(e) || 0), 0);
     const gS = grids.map((g) => ({ kwh: ser(g.id), cost: g.cost ? ser(g.cost) : null, price: g.price }));
     const solS = solars.map(ser), expS = exports.map(ser);
     const price = (t) => {
@@ -2068,7 +2093,7 @@ class HolmClimateEnergyCard extends HTMLElement {
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
       <div class="hd"><div class="tt">${c.title || ""}</div>
         <div class="pd" title="${this._linked ? "Suit le sélecteur de date" : "Aucun sélecteur de date trouvé : aujourd'hui"}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div></div>
-      ${this._err ? `<div class="err">Erreur : ${this._err}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : "Erreur : "}${this._err}</div>` : ""}
       ${body}
     </ha-card>`;
     const sr = this.shadowRoot;
@@ -2084,7 +2109,7 @@ class HolmClimateEnergyCard extends HTMLElement {
 
 // ---------------- Éditeur visuel ----------------
 const L = { title: "Titre", collection_key: "Clé du sélecteur de date (vide = défaut)", show_frame: "Afficher le cadre de la carte",
-  cost_mode: "Calcul du coût", price: "Prix fixe (€/kWh)", taxes_import: "Taxes ajoutées au prix réseau (€/kWh)",
+  cost_mode: "Calcul du coût", price: "Prix fixe (€/kWh)", taxes_import: "Taxes ajoutées au prix réseau (€/kWh) — vide : HOLM HP/HC si installée",
   compare: "Comparer à la période précédente", view: "Graphique par défaut", heat_color: "Couleur chauffage", cool_color: "Couleur climatisation",
   name: "Nom de la pièce", icon: "Icône", heating: "Énergie chauffage (kWh)", cooling: "Énergie climatisation (kWh)" };
 const hex2rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); if (!m) return undefined; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -2214,7 +2239,7 @@ class HolmYearBarsCard extends HTMLElement {
     const c = this._c, now = new Date(), y1 = now.getFullYear();
     const y0 = c.start_year ? Number(c.start_year) : y1 - Math.max(1, Number(c.years) || 3) + 1;
     try {
-      const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: new Date(y0, 0, 1).toISOString(), end_time: now.toISOString(),
+      const r = await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: new Date(y0, 0, 1).toISOString(), end_time: now.toISOString(),
         statistic_ids: [c.entity], period: "day", types: ["change"], units: { energy: "kWh" } });
       const rows = (r[c.entity] || []).map((s) => ({ d: new Date(s.start), v: Math.max(0, Number(s.change) || 0) }));
       const doy = (d) => Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(d.getFullYear(), 0, 1)) / 86400000);
@@ -2305,7 +2330,7 @@ class HolmYearBarsCard extends HTMLElement {
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
       ${c.title ? `<div class="tt">${c.title}</div>` : ""}
-      ${this._err ? `<div class="err">Erreur : ${this._err}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : "Erreur : "}${this._err}</div>` : ""}
       ${body}
     </ha-card>`;
   }
@@ -2378,7 +2403,7 @@ class HolmEnergyYearsCard extends HTMLElement {
   async _load() {
     try {
       const start = new Date(this._c.start_year, 0, 1);
-      const r = await this._hass.callWS({
+      const r = await window.__holmStats(this._hass, {
         type: "recorder/statistics_during_period",
         start_time: start.toISOString(),
         statistic_ids: [this._c.entity],
@@ -2408,7 +2433,7 @@ class HolmEnergyYearsCard extends HTMLElement {
     const total = rows.reduce((a, r) => a + r.v, 0);
     const items = [{ k: "Total", v: total, main: true }, ...rows.map((r) => ({ k: String(r.year), v: r.v }))];
     const body = this._err
-      ? `<div class="msg">Erreur : ${this._err}</div>`
+      ? `<div class="msg">${this._err === window.__holmNoEntity ? "" : "Erreur : "}${this._err}</div>`
       : !this._rows
       ? `<div class="msg">Chargement…</div>`
       : items.map((i) => `
@@ -2452,4 +2477,4 @@ window.customCards = window.customCards || [];
 window.customCards.push({ type: "holm-energy-years-card", name: "HOLM – Totaux annuels", description: "Totaux annuels d'une statistique d'énergie, en frise verticale" });
 })();
 
-console.info("%c HOLM-ENERGY-CARDS %c 1.2.1 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
+console.info("%c HOLM-ENERGY-CARDS %c 1.2.2 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
