@@ -19,7 +19,11 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
 
-### 🆕 Nouveautés de la 1.2.0
+### 🆕 Nouveautés de la 1.2.1
+
+**💶 Coûts justes avec Tempo et les prix qui changent.** Les cartes reprennent maintenant les **coûts enregistrés par Home Assistant** pour chaque source du tableau Énergie, calculés heure par heure au prix du moment, comme le tableau Énergie officiel. Avant, quand une source avait une entité de prix, la carte appliquait le prix **actuel** à tout l'historique : avec Tempo (bleu, blanc, rouge) ou après un changement de tarif, les coûts passés étaient faux. Concerne *Consommation par appareil*, *Chauffage & climatisation* et *Bilan énergétique*.
+
+### Nouveautés de la 1.2.0
 
 **🕒 Vue « Dans le temps ».** *Consommation par appareil* peut maintenant afficher tous les appareils dans **un même graphique** : barres empilées par heure, par jour ou par mois, avec **l'icône de l'appareil qui consomme le plus** au-dessus de chaque barre. On voit d'un coup d'œil **qui consomme et quand**.
 
@@ -231,6 +235,22 @@ label: Production
 
 Toutes les cartes acceptent aussi `show_frame: false` (sans cadre) et, pour celles qui suivent le sélecteur de date, `collection_key` si le tableau de bord en contient plusieurs.
 
+## 💶 D'où viennent les prix ?
+
+Les cartes ne lisent pas vos utility meters ni de tarif à elles : elles reprennent les **sources réseau du tableau Énergie** (Paramètres → Tableaux de bord → Énergie), dans cet ordre :
+
+1. la **statistique de coût** de la source, si vous en avez indiqué une (« entité qui suit le coût total ») ;
+2. sinon, le **coût que Home Assistant enregistre** pour la source quand elle a un prix (entité ou nombre) : `sensor.<source>_cost` et `sensor.<revente>_compensation`. Il est calculé heure par heure au prix du moment, donc juste avec Tempo, les heures pleines / creuses ou un changement de tarif ;
+3. pour les heures plus anciennes que ce coût enregistré, le prix actuel × kWh.
+
+*Consommation par appareil* et *Chauffage & climatisation* en déduisent un prix du kWh pour chaque heure, appliqué aux kWh de chaque appareil :
+
+- `cost_mode: real` : coût réseau de l'heure ÷ consommation de la maison. Le solaire est gratuit, ce qui fait baisser le prix moyen ;
+- `cost_mode: grid` : coût réseau de l'heure ÷ kWh achetés, comme si tout venait du réseau. C'est le mode à choisir pour comparer avec des compteurs par tarif ;
+- `cost_mode: fixed` : le prix `price`.
+
+Dans *Bilan énergétique*, chaque source utilise `cost_entity`, sinon le coût enregistré par Home Assistant pour son entité, sinon `price`. Un `price` fixe (nombre) reste prioritaire sur le coût enregistré.
+
 ---
 
 ## FAQ
@@ -240,6 +260,7 @@ Toutes les cartes acceptent aussi `show_frame: false` (sans cadre) et, pour cell
 | Une carte reste sur « aujourd'hui » | Ajoutez une carte **Sélecteur de date énergie** (`energy-date-selection`) dans la même vue. |
 | Pas d'appareils ou de sources | Configurez d'abord le **tableau de bord Énergie** de Home Assistant. |
 | Les coûts sont à 0 | Indiquez un prix (entité ou nombre) pour vos sources réseau, dans le tableau Énergie ou dans la carte. |
+| Les coûts ne correspondent pas à mes compteurs HP / HC | Voir [D'où viennent les prix ?](#-doù-viennent-les-prix-) : en mode `real`, le solaire est compté gratuit ; essayez `cost_mode: grid`. |
 | Pas de courbe de puissance dans le graphique d'un appareil | Associez un capteur de puissance à l'appareil (tableau Énergie, ou `power` dans `devices`). |
 | La nouvelle version ne s'affiche pas | Videz le cache (Ctrl + F5). |
 

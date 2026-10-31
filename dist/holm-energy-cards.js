@@ -1,4 +1,4 @@
-/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.2.0
+/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.2.1
  * Bilan énergétique, consommation par appareil, production & consommation, chauffage & climatisation,
  * énergie par année (barres) et totaux annuels (frise). Un seul fichier, six cartes.
  */
@@ -46,6 +46,13 @@ const DEF = {
   solar: { color: "#e3a21a", icon: "mdi:solar-power-variant", label: "Production" },
   import: { color: "#4a90d9", icon: "mdi:transmission-tower-import", label: "Achat réseau" },
   export: { color: "#9b6fd6", icon: "mdi:transmission-tower-export", label: "Revente" },
+};
+// Coûts enregistrés par Home Assistant pour chaque source du tableau Énergie (sensor.xxx_cost, sensor.xxx_compensation),
+// calculés heure par heure au prix du moment : justes même quand le prix change (Tempo, HP/HC, changement de tarif).
+window.__holmEnergyCosts = window.__holmEnergyCosts || function (hass) {
+  const f = window.__holmEnergyCosts;
+  if (!f._p || Date.now() - f._t > 600000) { f._t = Date.now(); f._p = hass.callWS({ type: "energy/info" }).then((r) => (r && r.cost_sensors) || {}).catch(() => ({})); }
+  return f._p;
 };
 class HolmEnergySourcesCard extends HTMLElement {
   setConfig(c) {
@@ -96,16 +103,22 @@ class HolmEnergySourcesCard extends HTMLElement {
     const { start } = this._range, end = this._range.end || new Date();
     const span = (end - start) / 86400000;
     const period = span <= 2 ? "hour" : span <= 62 ? "day" : "month";
-    const ids = [...new Set(this._c.items.flatMap((i) => [i.entity, i.cost_entity]).filter(Boolean))];
     try {
+      // sans cost_entity : coût enregistré par Home Assistant pour cette source (prix de chaque heure), sinon prix × kWh.
+      // Un prix fixe (nombre) indiqué dans la carte reste prioritaire.
+      const cs = await window.__holmEnergyCosts(this._hass);
+      const items = this._c.items.map((i) => ({ i, cost: i.cost_entity || (typeof i.price === "number" ? null : cs[i.entity]) || null }));
+      const ids = [...new Set(items.flatMap((x) => [x.i.entity, x.cost]).filter(Boolean))];
       const r = await this._hass.callWS({ type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
         statistic_ids: ids, period, types: ["change"], units: { energy: "kWh" } });
       const sum = (id) => (r[id] || []).reduce((a, s) => a + (Number(s.change) || 0), 0);
-      this._data = this._c.items.map((i) => {
-        const kwh = sum(i.entity);
+      const rows = (id) => new Map((r[id] || []).map((s) => [+new Date(s.start), Number(s.change) || 0]));
+      this._data = items.map(({ i, cost }) => {
+        const kwh = sum(i.entity), p = this._num(i.price);
         let eur = NaN;
         if (i.cost_entity) eur = sum(i.cost_entity);
-        else { const p = this._num(i.price); if (!isNaN(p)) eur = kwh * p; }
+        else if (cost && (r[cost] || []).length) { const cm = rows(cost); eur = 0; for (const [t, k] of rows(i.entity)) eur += cm.has(t) ? cm.get(t) : isNaN(p) ? 0 : k * p; }
+        else if (!isNaN(p)) eur = kwh * p;
         return { ...i, kwh, eur };
       });
       this._err = null;
@@ -817,12 +830,13 @@ class HolmEnergyDevicesCard extends HTMLElement {
       : (prefs.device_consumption || []).map((d) => ({ entity: d.stat_consumption, name: d.name, power: d.stat_rate })))
       .filter((d) => d.entity && !excl.has(d.entity));
     const grids = [], solars = [], exports = [];
+    const cs = await window.__holmEnergyCosts(this._hass);
     for (const s of prefs.energy_sources || []) {
       if (s.type === "solar" && s.stat_energy_from) solars.push(s.stat_energy_from);
       if (s.type === "battery") { if (s.stat_energy_from) solars.push(s.stat_energy_from); if (s.stat_energy_to) exports.push(s.stat_energy_to); }
       if (s.type === "grid") {
         const flows = s.flow_from ? s.flow_from : s.stat_energy_from ? [s] : [];
-        for (const f of flows) grids.push({ id: f.stat_energy_from, cost: f.stat_cost, price: f.entity_energy_price || f.number_energy_price });
+        for (const f of flows) grids.push({ id: f.stat_energy_from, cost: f.stat_cost || cs[f.stat_energy_from], price: f.entity_energy_price || f.number_energy_price });
         for (const t of s.flow_to || (s.stat_energy_to ? [{ stat_energy_to: s.stat_energy_to }] : [])) exports.push(t.stat_energy_to);
       }
     }
@@ -850,7 +864,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
       let imp = 0, cost = 0;
       for (const g of gS) {
         const k = g.kwh.get(t) || 0; imp += k;
-        cost += g.cost ? g.cost.get(t) || 0 : k * (this._num(g.price) || 0);
+        cost += g.cost && g.cost.has(t) ? g.cost.get(t) : k * (this._num(g.price) || 0);
       }
       cost += imp * tax; impTot += imp; costTot += cost;
       const sol = solS.reduce((a, m) => a + (m.get(t) || 0), 0), ex = expS.reduce((a, m) => a + (m.get(t) || 0), 0);
@@ -1824,11 +1838,12 @@ class HolmClimateEnergyCard extends HTMLElement {
   async _fetch(start, end, period, roomIds) {
     const c = this._c, prefs = await this._prefs();
     const grids = [], solars = [], exports = [];
+    const cs = c.cost_mode !== "fixed" ? await window.__holmEnergyCosts(this._hass) : {};
     if (c.cost_mode !== "fixed") for (const s of prefs.energy_sources || []) {
       if (s.type === "solar" && s.stat_energy_from) solars.push(s.stat_energy_from);
       if (s.type === "battery") { if (s.stat_energy_from) solars.push(s.stat_energy_from); if (s.stat_energy_to) exports.push(s.stat_energy_to); }
       if (s.type === "grid") {
-        for (const f of s.flow_from || (s.stat_energy_from ? [s] : [])) grids.push({ id: f.stat_energy_from, cost: f.stat_cost, price: f.entity_energy_price || f.number_energy_price });
+        for (const f of s.flow_from || (s.stat_energy_from ? [s] : [])) grids.push({ id: f.stat_energy_from, cost: f.stat_cost || cs[f.stat_energy_from], price: f.entity_energy_price || f.number_energy_price });
         for (const t of s.flow_to || (s.stat_energy_to ? [s] : [])) exports.push(t.stat_energy_to);
       }
     }
@@ -1842,7 +1857,7 @@ class HolmClimateEnergyCard extends HTMLElement {
     const price = (t) => {
       if (c.cost_mode === "fixed") { const p = this._num(c.price); return isNaN(p) ? 0 : p; }
       let imp = 0, cost = 0;
-      for (const g of gS) { const k = g.kwh.get(t) || 0; imp += k; cost += g.cost ? g.cost.get(t) || 0 : k * (this._num(g.price) || 0); }
+      for (const g of gS) { const k = g.kwh.get(t) || 0; imp += k; cost += g.cost && g.cost.has(t) ? g.cost.get(t) : k * (this._num(g.price) || 0); }
       cost += imp * tax;
       if (c.cost_mode === "grid") return imp > 0 ? cost / imp : this._avg || 0;
       const sol = solS.reduce((a, m) => a + (m.get(t) || 0), 0), ex = expS.reduce((a, m) => a + (m.get(t) || 0), 0);
@@ -1850,7 +1865,7 @@ class HolmClimateEnergyCard extends HTMLElement {
       return cons > 0 ? cost / cons : 0;
     };
     if (c.cost_mode === "grid") { // prix moyen de secours pour les créneaux sans achat
-      let i = 0, k = 0; for (const g of gS) for (const [t, v] of g.kwh) { i += v; k += g.cost ? g.cost.get(t) || 0 : v * (this._num(g.price) || 0); }
+      let i = 0, k = 0; for (const g of gS) for (const [t, v] of g.kwh) { i += v; k += g.cost && g.cost.has(t) ? g.cost.get(t) : v * (this._num(g.price) || 0); }
       this._avg = i > 0 ? k / i + tax : 0;
     }
     return { ser, price };
@@ -2437,4 +2452,4 @@ window.customCards = window.customCards || [];
 window.customCards.push({ type: "holm-energy-years-card", name: "HOLM – Totaux annuels", description: "Totaux annuels d'une statistique d'énergie, en frise verticale" });
 })();
 
-console.info("%c HOLM-ENERGY-CARDS %c 1.2.0 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
+console.info("%c HOLM-ENERGY-CARDS %c 1.2.1 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");

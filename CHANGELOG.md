@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+- **Coûts justes avec Tempo et les prix variables** : quand une source du tableau Énergie a une entité de prix, les cartes utilisent maintenant le coût que Home Assistant enregistre heure par heure pour cette source (`sensor.<source>_cost`, `sensor.<revente>_compensation`), comme le tableau Énergie officiel. Avant, le prix actuel était appliqué à tout l'historique : avec Tempo ou après un changement de tarif, les coûts passés étaient faux. Concerne *Consommation par appareil*, *Chauffage & climatisation* et *Bilan énergétique*.
+- Pour les heures antérieures au coût enregistré, le prix actuel × kWh sert de secours.
+- *Bilan énergétique* : un `price` fixe (nombre) indiqué dans la carte reste prioritaire.
+- README : nouvelle section « D'où viennent les prix ? ».
+
 ## 1.2.0
 - **Consommation par appareil — coût corrigé dans le graphique d'un appareil** : le coût est recalculé heure par heure au prix réel sur la période du graphique (24 h, 7 j, 30 j, 12 mois ou dates au choix). Avant, il reprenait le prix moyen de la période affichée par la carte, ce qui pouvait donner un coût très faux sur 12 mois. Coût de chaque barre au survol.
 - La carte calcule le coût à l'heure jusqu'à 31 jours (au jour au-delà).
