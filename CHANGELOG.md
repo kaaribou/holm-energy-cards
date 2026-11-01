@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+- **8 langues** : français, anglais, allemand, espagnol, italien, néerlandais, portugais et polonais, pour les six cartes, leurs éditeurs visuels et le graphique d'un appareil. Elles suivent la langue du profil Home Assistant (anglais si la langue n'est pas traduite) ; nouvelle option `language` sur chaque carte, aussi réglable dans l'éditeur. Nombres et dates au format de la langue.
+- Les titres par défaut sont traduits à l'affichage, même enregistrés dans la configuration.
+- README en anglais (`README.en.md`).
+
 ## 1.2.2
 - **Abonnement et taxes lus dans HOLM HP/HC** (#4) : si l'intégration [HOLM HP/HC](https://github.com/kaaribou/holm-tarif) est installée, *Bilan énergétique* y lit l'abonnement mensuel, la CSPE / accise, la TCFE et la taxe sur la revente ; *Consommation par appareil* et *Chauffage & climatisation* y lisent la CSPE et la TCFE. Les valeurs renseignées dans une carte restent prioritaires ; `holm_tarif: false` désactive la lecture automatique.
 - **Plus d'erreur `statistic_ids` à l'ajout d'une carte** (#5) : une carte sans entité choisie, ou un tableau Énergie pas encore configuré, n'interroge plus les statistiques et affiche « Choisissez une entité dans l'éditeur de la carte, ou configurez d'abord le tableau Énergie de Home Assistant. »

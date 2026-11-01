@@ -4,6 +4,8 @@
 ![Version](https://img.shields.io/github/v/release/kaaribou/holm-energy-cards)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-03a9f4)
 
+🇫🇷 Français · [🇬🇧 English](README.en.md)
+
 **Six cartes pour comprendre votre énergie : ce que vous produisez, achetez et revendez, ce que coûte chaque appareil, le chauffage pièce par pièce, et l'évolution année après année.**
 
 HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant : sources, appareils et prix sont repris automatiquement. Les cartes suivent le **sélecteur de date** du tableau Énergie (jour, semaine, mois, année), comme les cartes officielles.
@@ -19,7 +21,12 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
 
-### 🆕 Nouveautés de la 1.2.2
+### 🆕 Nouveautés de la 1.3.0
+
+- 🌍 **Les six cartes parlent 8 langues** : français, anglais, allemand, espagnol, italien, néerlandais, portugais et polonais, éditeurs et graphiques compris. Elles suivent la langue de votre profil Home Assistant (anglais si votre langue n'est pas traduite) ; l'option `language`, disponible sur chaque carte, permet d'en imposer une. Les nombres et les dates suivent aussi la langue.
+- Les titres par défaut (« Bilan énergétique », « Consommation par appareil »…) sont traduits eux aussi, même enregistrés dans la configuration.
+
+### Nouveautés de la 1.2.2
 
 **🧾 Abonnement et taxes lus dans [HOLM HP/HC](https://github.com/kaaribou/holm-tarif).** Si l'intégration HOLM HP/HC est installée, *Bilan énergétique*, *Consommation par appareil* et *Chauffage & climatisation* y lisent automatiquement l'abonnement mensuel, la CSPE / accise, la TCFE et la taxe sur la revente. Plus besoin de les renseigner dans chaque carte. Les valeurs indiquées dans une carte restent prioritaires, et `holm_tarif: false` désactive la lecture automatique.
 
@@ -107,6 +114,7 @@ subscription_period: month
 
 | Option | Description | Par défaut |
 |---|---|---|
+| `language` | Langue : `fr`, `en`, `de`, `es`, `it`, `nl`, `pt`, `pl` | celle du profil |
 | `items` | Sources : `type` (`solar`, `import`, `export`), `entity` (kWh), `name`, `cost_entity` ou `price`, `color`, `icon` (**obligatoire**) | — |
 | `subscription`, `subscription_period` | Abonnement (nombre ou entité) et sa période (`month` / `year`) | HOLM HP/HC si installée |
 | `taxes_import` | Taxes ajoutées aux kWh achetés (€/kWh, nombre ou entités) | HOLM HP/HC si installée |
@@ -241,7 +249,7 @@ label: Production
 | `color` | Couleur de la frise | couleur du thème |
 | `start_year` | Première année prise en compte | `2000` |
 
-Toutes les cartes acceptent aussi `show_frame: false` (sans cadre) et, pour celles qui suivent le sélecteur de date, `collection_key` si le tableau de bord en contient plusieurs.
+Toutes les cartes acceptent aussi `language` (`fr`, `en`, `de`, `es`, `it`, `nl`, `pt`, `pl` ; par défaut celle du profil), `show_frame: false` (sans cadre) et, pour celles qui suivent le sélecteur de date, `collection_key` si le tableau de bord en contient plusieurs.
 
 ## 💶 D'où viennent les prix ?
 
