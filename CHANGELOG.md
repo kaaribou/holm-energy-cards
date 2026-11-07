@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+- **Devise de Home Assistant** ([#6](https://github.com/kaaribou/holm-energy-cards/issues/6)) : les montants et les prix s'affichent dans la devise réglée dans Home Assistant au lieu de « € » en dur, avec une icône adaptée (billet si la devise n'a pas d'icône). Option `currency` pour imposer une devise. Aucun changement en euros.
+- **Puissance réseau inversée ou en deux capteurs** ([#7](https://github.com/kaaribou/holm-energy-cards/issues/7)) : *Production & consommation* reprend toutes les formes de puissance réseau du tableau Énergie (`power_config` standard, inversé, ou deux capteurs), à partir des capteurs d'origine et de leur historique. Nouvelles options `grid_power_invert`, `grid_power_import` et `grid_power_export`, aussi dans l'éditeur. La valeur en direct tient compte des capteurs en kW.
+- **Coût des chauffages non électriques** ([#8](https://github.com/kaaribou/holm-energy-cards/issues/8)) : dans *Chauffage & climatisation*, le coût du chauffage d'une pièce vient de `cost_entity` (statistique de coût), sinon de `price`, sinon de la source gaz du tableau Énergie correspondant à l'entité `heating`, sinon du prix de l'électricité comme avant. Tuile Climatisation masquée automatiquement quand aucune pièce n'a de climatisation, option `show_cooling`.
+
 ## 1.3.0
 - **8 langues** : français, anglais, allemand, espagnol, italien, néerlandais, portugais et polonais, pour les six cartes, leurs éditeurs visuels et le graphique d'un appareil. Elles suivent la langue du profil Home Assistant (anglais si la langue n'est pas traduite) ; nouvelle option `language` sur chaque carte, aussi réglable dans l'éditeur. Nombres et dates au format de la langue.
 - Les titres par défaut sont traduits à l'affichage, même enregistrés dans la configuration.

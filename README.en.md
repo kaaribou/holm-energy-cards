@@ -23,7 +23,15 @@ HOLM Energy Cards builds on the Home Assistant **Energy dashboard**: sources, de
 
 *Screenshots in French — the cards follow the language of your Home Assistant profile.*
 
-### 🆕 What's new in 1.3.0
+### 🆕 What's new in 1.4.0
+
+Thanks to Lheriss for these three ideas. Nothing changes for an existing setup in euros, with a standard grid meter and electric heating.
+
+- 💱 **Home Assistant's currency** (#6): amounts show in the currency set in Settings → System → General (“CHF 2.30”, “$2.30”…), with a matching icon. `currency` option to force one. See [Currency](#-currency).
+- 🔁 **Inverted grid power or two sensors** (#7): in *Production & consumption*, the Power view follows every grid power setting of the Energy dashboard (standard, inverted or two sensors), using the original sensors and their whole history. New `grid_power_invert`, `grid_power_import` and `grid_power_export` options. See [Grid power](#grid-power).
+- 🔥 **Non-electric heating** (#8): in *Heating & air conditioning*, the cost of pellet, gas or oil heating comes from its Energy dashboard gas source, or from the new room options `cost_entity` and `price`. The Air conditioning tile hides itself when no room has air conditioning (`show_cooling` option). See [Cost of non-electric heating](#cost-of-non-electric-heating).
+
+### What's new in 1.3.0
 
 - 🌍 **The six cards speak 8 languages**: English, French, German, Spanish, Italian, Dutch, Portuguese and Polish, editors and charts included. They follow the language of your Home Assistant profile (English if your language isn't translated yet); the `language` option, available on every card, lets you force one. Numbers and dates follow the language too.
 - Default titles (“Energy balance”, “Consumption per device”…) are translated as well, even when saved in the configuration.
@@ -166,7 +174,31 @@ mode: energy
 | `mode` | Default view: `energy` or `power` | `energy` |
 | `show_tabs`, `show_forecast` | Energy / Power tabs, solar forecast | `true` |
 | `solar_power`, `grid_power` | Power sensors | the Energy dashboard's |
+| `grid_power_invert` | `true` if your `grid_power` sensor is **negative when importing** and positive when exporting | `false` |
+| `grid_power_import`, `grid_power_export` | Two separate positive sensors, import and export, instead of `grid_power` | — |
 | `solar_color`, `self_color`, `export_color`, `grid_colors`, `power_grid_color` | Colours | — |
+
+### Grid power
+
+The **Power** view draws grid power **above the axis when importing** and **below when exporting**. With no option, the card follows the grid power setting of the Energy dashboard, whatever its form:
+
+- **a standard sensor**, positive when importing and negative when exporting: used as is;
+- **an inverted sensor**, negative when importing (such as the SolarEdge M1 meter): its sign is flipped;
+- **two separate sensors**, import and export, both positive: the card computes import − export.
+
+In the last two cases, Home Assistant creates an intermediate sensor that starts with no history. The card reads **your original sensors** directly, with their whole history.
+
+To choose yourself:
+
+```yaml
+# sensor negative when importing
+grid_power: sensor.solaredge_m1_ac_power
+grid_power_invert: true
+
+# or two positive sensors
+grid_power_import: sensor.grid_import_power
+grid_power_export: sensor.grid_export_power
+```
 
 ## 🌡️ Heating & air conditioning
 
@@ -190,11 +222,36 @@ rooms:
 
 | Option | Description | Default |
 |---|---|---|
-| `rooms` | Rooms: `name`, `icon`, `heating`, `cooling` (kWh) (**required**) | — |
+| `rooms` | Rooms: `name`, `icon`, `heating`, `cooling` (kWh) (**required**), and for non-electric heating `cost_entity` or `price` (see below) | — |
 | `cost_mode`, `price`, `taxes_import` | Cost calculation (see Consumption per device) | `real` |
 | `compare` | Compare with the previous period | `true` |
 | `view` | `bars` or `heatmap` | `bars` |
 | `heat_color`, `cool_color` | Colours | orange / blue |
+| `show_cooling` | Air conditioning tile: `true` (always), `false` (never); with no option, hidden when no room has `cooling` | automatic |
+
+### Cost of non-electric heating
+
+By default, heating and air conditioning are counted **at the electricity price** (see [Where do the prices come from?](#-where-do-the-prices-come-from)). For a pellet, gas or oil boiler, that price is wrong. A room's **heating** cost is taken, in this order:
+
+1. `cost_entity`: a **cost statistic** (in your currency, only going up, like an Energy dashboard source's). The card uses its increase over the period;
+2. `price`: a heating **price per kWh**, as a number or from an entity;
+3. otherwise, if the `heating` entity is set as a **gas source in the Energy dashboard**, that source's cost: its cost statistic, the cost Home Assistant records for it, or its price;
+4. otherwise, the electricity price, as before.
+
+Air conditioning is always counted at the electricity price.
+
+```yaml
+rooms:
+  - name: House
+    icon: mdi:fire
+    heating: sensor.pellets_energy            # Energy dashboard gas source: nothing else to do
+  - name: Workshop
+    icon: mdi:fire
+    heating: sensor.stove_energy
+    cost_entity: sensor.stove_total_cost       # or: price: 0.085
+```
+
+The `heating` entity must be in **kWh**. An Energy dashboard gas source measured in m³ does not fit: you need a sensor converted to kWh.
 
 ## 📅 Energy per year
 
@@ -241,6 +298,12 @@ label: Production
 | `start_year` | First year taken into account | `2000` |
 
 All cards also accept `language` (`fr`, `en`, `de`, `es`, `it`, `nl`, `pt`, `pl`; the profile's by default), `show_frame: false` (no frame) and, for those following the date picker, `collection_key` if the dashboard has several.
+
+## 💱 Currency
+
+Amounts show in **Home Assistant's currency** (Settings → System → General → Currency): “€2.30”, “CHF 2.30”, “$2.30”… The cost icon follows the currency when one exists (€, $, £…), otherwise it is a banknote. The card does **no conversion**: amounts come from your sensors and prices, which are already in your currency.
+
+To force a currency on a card: `currency: CHF` (3-letter code).
 
 ## 💶 Where do the prices come from?
 

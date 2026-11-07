@@ -1,4 +1,4 @@
-/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.3.0
+/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.4.0
  * Bilan énergétique, consommation par appareil, production & consommation, chauffage & climatisation,
  * énergie par année (barres) et totaux annuels (frise). Un seul fichier, six cartes.
  */
@@ -241,16 +241,31 @@
     "Barres annuelles avec comparaison à date et projection de l'année en cours": ["Yearly bars with to-date comparison and current year projection", "Jahresbalken mit Vergleich bis heute und Prognose des laufenden Jahres", "Barras anuales con comparación hasta la fecha y proyección del año en curso", "Barre annuali con confronto a oggi e proiezione dell'anno in corso", "Jaarstaven met vergelijking tot nu toe en prognose van het lopende jaar", "Barras anuais com comparação até à data e projeção do ano corrente", "Roczne słupki z porównaniem do dziś i prognozą bieżącego roku"],
     "Période": ["Period", "Zeitraum", "Período", "Periodo", "Periode", "Período", "Okres"],
     "HOLM – Totaux annuels": ["HOLM – Yearly totals", "HOLM – Jahressummen", "HOLM – Totales anuales", "HOLM – Totali annuali", "HOLM – Jaartotalen", "HOLM – Totais anuais", "HOLM – Sumy roczne"],
-    "Totaux annuels d'une statistique d'énergie, en frise verticale": ["Yearly totals of an energy statistic, as a vertical timeline", "Jahressummen einer Energiestatistik als vertikale Zeitleiste", "Totales anuales de una estadística de energía, en línea de tiempo vertical", "Totali annuali di una statistica di energia, in linea temporale verticale", "Jaartotalen van een energiestatistiek, als verticale tijdlijn", "Totais anuais de uma estatística de energia, em cronologia vertical", "Sumy roczne statystyki energii na pionowej osi czasu"]
+    "Totaux annuels d'une statistique d'énergie, en frise verticale": ["Yearly totals of an energy statistic, as a vertical timeline", "Jahressummen einer Energiestatistik als vertikale Zeitleiste", "Totales anuales de una estadística de energía, en línea de tiempo vertical", "Totali annuali di una statistica di energia, in linea temporale verticale", "Jaartotalen van een energiestatistiek, als verticale tijdlijn", "Totais anuais de uma estatística de energia, em cronologia vertical", "Sumy roczne statystyki energii na pionowej osi czasu"],
+    "Inverser le signe de la puissance réseau (capteur négatif à l'achat)": ["Invert the grid power sign (sensor negative when importing)", "Vorzeichen der Netzleistung umkehren (Sensor beim Bezug negativ)", "Invertir el signo de la potencia de red (sensor negativo al comprar)", "Inverti il segno della potenza di rete (sensore negativo in prelievo)", "Teken van het netvermogen omkeren (sensor negatief bij afname)", "Inverter o sinal da potência da rede (sensor negativo na compra)", "Odwróć znak mocy sieci (czujnik ujemny przy poborze)"],
+    "Ou puissance d'achat seule (W, positive)": ["Or import power only (W, positive)", "Oder nur Bezugsleistung (W, positiv)", "O solo potencia de compra (W, positiva)", "Oppure solo potenza di prelievo (W, positiva)", "Of alleen afnamevermogen (W, positief)", "Ou apenas potência de compra (W, positiva)", "Lub tylko moc poboru (W, dodatnia)"],
+    "et puissance de revente seule (W, positive)": ["and export power only (W, positive)", "und nur Einspeiseleistung (W, positiv)", "y solo potencia de venta (W, positiva)", "e solo potenza di immissione (W, positiva)", "en alleen terugleververmogen (W, positief)", "e apenas potência de venda (W, positiva)", "i tylko moc oddawania (W, dodatnia)"],
+    "Tuile Climatisation": ["Air conditioning tile", "Kachel Klimaanlage", "Mosaico Aire acondicionado", "Riquadro Climatizzazione", "Tegel Airco", "Mosaico Ar condicionado", "Kafelek Klimatyzacja"],
+    "Coût du chauffage : statistique de coût (facultatif)": ["Heating cost: cost statistic (optional)", "Heizkosten: Kostenstatistik (optional)", "Coste de la calefacción: estadística de coste (opcional)", "Costo del riscaldamento: statistica di costo (facoltativo)", "Verwarmingskosten: kostenstatistiek (optioneel)", "Custo do aquecimento: estatística de custo (opcional)", "Koszt ogrzewania: statystyka kosztu (opcjonalnie)"],
+    "ou prix du kWh de chauffage (facultatif)": ["or heating price per kWh (optional)", "oder Heizpreis pro kWh (optional)", "o precio del kWh de calefacción (opcional)", "o prezzo del kWh di riscaldamento (facoltativo)", "of verwarmingsprijs per kWh (optioneel)", "ou preço do kWh de aquecimento (opcional)", "lub cena kWh ogrzewania (opcjonalnie)"],
+    "Automatique (masquée sans climatisation)": ["Automatic (hidden without air conditioning)", "Automatisch (ohne Klimaanlage ausgeblendet)", "Automático (oculto sin aire acondicionado)", "Automatico (nascosto senza climatizzazione)", "Automatisch (verborgen zonder airco)", "Automático (oculto sem ar condicionado)", "Automatycznie (ukryty bez klimatyzacji)"],
+    "Toujours affichée": ["Always shown", "Immer angezeigt", "Siempre visible", "Sempre visibile", "Altijd tonen", "Sempre visível", "Zawsze widoczny"],
+    "Masquée": ["Hidden", "Ausgeblendet", "Oculto", "Nascosto", "Verborgen", "Oculto", "Ukryty"],
+    "Pour un chauffage non électrique (pellets, gaz, fioul). Vide : coût de la source gaz du tableau Énergie si le chauffage en est une, sinon prix de l'électricité.": ["For non-electric heating (pellets, gas, oil). Empty: cost of the Energy dashboard gas source if the heating is one, otherwise the electricity price.", "Für nicht elektrische Heizung (Pellets, Gas, Heizöl). Leer: Kosten der Gasquelle des Energie-Dashboards, falls die Heizung eine ist, sonst Strompreis.", "Para calefacción no eléctrica (pellets, gas, gasóleo). Vacío: coste de la fuente de gas del panel de Energía si la calefacción lo es; si no, precio de la electricidad.", "Per riscaldamento non elettrico (pellet, gas, gasolio). Vuoto: costo della fonte gas della dashboard Energia se il riscaldamento lo è, altrimenti prezzo dell'elettricità.", "Voor niet-elektrische verwarming (pellets, gas, stookolie). Leeg: kosten van de gasbron in het Energiedashboard als de verwarming dat is, anders de elektriciteitsprijs.", "Para aquecimento não elétrico (pellets, gás, gasóleo). Vazio: custo da fonte de gás do painel Energia se o aquecimento o for; caso contrário, preço da eletricidade.", "Dla ogrzewania nieelektrycznego (pellet, gaz, olej). Puste: koszt źródła gazu z panelu Energia, jeśli ogrzewanie nim jest, w przeciwnym razie cena energii elektrycznej."],
   };
   let LANG = "fr", NUMLOC = "fr-FR";
   const langOf = (hass, c) => { const l = String((c && c.language) || (hass && ((hass.locale && hass.locale.language) || hass.language)) || navigator.language || "en").toLowerCase().split(/[-_]/)[0]; return l === "fr" || HOLM_LANGS.includes(l) ? l : "en"; };
-  const setLang = (hass, c) => { LANG = langOf(hass, c); const p = hass && hass.locale && hass.locale.language; NUMLOC = !(c && c.language) && p && p.toLowerCase().startsWith(LANG) ? p : LOCALES[LANG]; return LANG; };
-  const _ = (s, v) => { let o = LANG === "fr" ? s : ((I18N[s] && I18N[s][HOLM_LANGS.indexOf(LANG)]) || s); if (v) for (const k in v) o = o.split("{" + k + "}").join(v[k]); return o; };
+  // devise (#6) : option `currency` de la carte, sinon celle de Home Assistant (Paramètres → Système → Général) ; « € » par défaut
+  let CUR = "€", CUR_CODE = "EUR";
+  const curSym = (code) => { try { return new Intl.NumberFormat(NUMLOC, { style: "currency", currency: code, currencyDisplay: "narrowSymbol" }).formatToParts(0).find((x) => x.type === "currency").value; } catch (e) { return code; } };
+  const setCur = (hass, c) => { const code = String((c && c.currency) || (hass && hass.config && hass.config.currency) || "EUR").toUpperCase(); if (code !== CUR_CODE || (code !== "EUR" && CUR === "€")) { CUR_CODE = code; CUR = code === "EUR" ? "€" : curSym(code); } };
+  const curIcon = () => ({ EUR: "mdi:currency-eur", USD: "mdi:currency-usd", GBP: "mdi:currency-gbp", JPY: "mdi:currency-jpy", CNY: "mdi:currency-cny", INR: "mdi:currency-inr", RUB: "mdi:currency-rub", KRW: "mdi:currency-krw", TRY: "mdi:currency-try", BRL: "mdi:currency-brl", PLN: "mdi:currency-pln" }[CUR_CODE] || "mdi:cash");
+  const setLang = (hass, c) => { LANG = langOf(hass, c); const p = hass && hass.locale && hass.locale.language; NUMLOC = !(c && c.language) && p && p.toLowerCase().startsWith(LANG) ? p : LOCALES[LANG]; setCur(hass, c); return LANG; };
+  const _ = (s, v) => { let o = LANG === "fr" ? s : ((I18N[s] && I18N[s][HOLM_LANGS.indexOf(LANG)]) || s); if (v) for (const k in v) o = o.split("{" + k + "}").join(v[k]); return CUR === "€" ? o : o.split("€").join(CUR); };
   // champ « Langue » pour les éditeurs visuels (ha-form)
   const langField = () => ({ name: "language", selector: { select: { mode: "dropdown", options: [{ value: "", label: _("Automatique (profil)") }, ...Object.entries(LANG_NAMES).map(([value, label]) => ({ value, label }))] } } });
   // traduit les titres de sections et les libellés d'options d'un schéma ha-form (écrits en français)
-  const locSchema = (sc) => (sc || []).map((x) => { const o = { ...x }; if (o.title) o.title = _(o.title); if (o.schema) o.schema = locSchema(o.schema);
+  const locSchema = (sc) => (sc || []).map((x) => { const o = { ...x }; if (o.title) o.title = _(o.title); if (o.icon === "mdi:currency-eur") o.icon = curIcon(); if (o.schema) o.schema = locSchema(o.schema);
     if (o.selector && o.selector.select && o.name !== "language") o.selector = { ...o.selector, select: { ...o.selector.select, options: (o.selector.select.options || []).map((op) => (typeof op === "string" ? op : { ...op, label: _(op.label) })) } };
     if (o.name === "language" && o.selector && o.selector.select) o.selector = { ...o.selector, select: { ...o.selector.select, options: o.selector.select.options.map((op) => (op.value ? op : { ...op, label: _("Automatique (profil)") })) } };
     return o; });
@@ -454,7 +469,7 @@ class HolmEnergySourcesCard extends HTMLElement {
         return `<div class="row" data-e="${x.entity}"><div class="ic sm" style="--c:${col}"><ha-icon icon="${x.icon || DEF[t].icon}"></ha-icon></div>
           <div class="nm"><div class="n">${name}</div><div class="bar"><i style="width:${(Math.abs(x.kwh) / max) * 100}%;background:${col}"></i></div></div>
           <div class="v">${fr(x.kwh, 2)} <small>kWh</small></div>
-          <div class="e ${t === "export" ? "pos" : ""}">${isNaN(x.eur) ? "" : (t === "export" ? "+" : "") + fr(x.eur, 2) + " €"}</div></div>`;
+          <div class="e ${t === "export" ? "pos" : ""}">${isNaN(x.eur) ? "" : (t === "export" ? "+" : "") + fr(x.eur, 2) + " " + CUR}</div></div>`;
       }).join("")}${extra}</div>`;
     };
     this.shadowRoot.innerHTML = `
@@ -515,26 +530,26 @@ class HolmEnergySourcesCard extends HTMLElement {
       ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>` : ""}
       <div class="kpis">
         ${kpi(DEF.solar.icon, DEF.solar.color, _("Production"), `${fr(prod, 1)} <small>kWh</small>`, "")}
-        ${kpi(DEF.import.icon, DEF.import.color, _("Achat réseau"), `${fr(imp, 1)} <small>kWh</small>`, `${fr(cImp, 2)} €`)}
-        ${kpi(DEF.export.icon, DEF.export.color, _("Revente"), `${fr(exp, 1)} <small>kWh</small>`, `+${fr(cExp, 2)} €`)}
+        ${kpi(DEF.import.icon, DEF.import.color, _("Achat réseau"), `${fr(imp, 1)} <small>kWh</small>`, `${fr(cImp, 2)} ${CUR}`)}
+        ${kpi(DEF.export.icon, DEF.export.color, _("Revente"), `${fr(exp, 1)} <small>kWh</small>`, `+${fr(cExp, 2)} ${CUR}`)}
       </div>
       <div class="mid">
-        <div class="bl"><div class="l">${net <= 0 ? _("Gain net") : hasBill ? _("Facture estimée") : _("Coût net")}</div><div class="b ${net <= 0 ? "gain" : "cost"}">${fr(Math.abs(net), 2)} €</div>
+        <div class="bl"><div class="l">${net <= 0 ? _("Gain net") : hasBill ? _("Facture estimée") : _("Coût net")}</div><div class="b ${net <= 0 ? "gain" : "cost"}">${fr(Math.abs(net), 2)} ${CUR}</div>
           <div class="s">${_("Conso totale")} ${fr(conso, 1)} kWh</div></div>
         ${ring(autoC, DEF.solar.color, _("Auto-<br>consommation"))}
         ${ring(autoS, "#1fce8a", _("Auto-<br>suffisance"))}
       </div>
       ${group("solar", _("Production"), by("solar").length ? `<div class="row sub"><div class="ic sm" style="--c:#1fce8a"><ha-icon icon="mdi:home-lightning-bolt"></ha-icon></div>
           <div class="nm"><div class="n">${c.self_name || _("Consommée sur place")}</div><div class="bar"><i style="width:${prod > 0 ? (self / prod) * 100 : 0}%;background:#1fce8a"></i></div></div>
-          <div class="v">${fr(self, 2)} <small>kWh</small></div><div class="e pos" title="${_("Économie : kWh non achetés au réseau")}">${isNaN(selfEur) ? "" : fr(selfEur, 2) + " €"}</div></div>` : "")}
+          <div class="v">${fr(self, 2)} <small>kWh</small></div><div class="e pos" title="${_("Économie : kWh non achetés au réseau")}">${isNaN(selfEur) ? "" : fr(selfEur, 2) + " " + CUR}</div></div>` : "")}
       ${group("import", _("Réseau — achat"))}${group("export", _("Réseau — revente"))}
       ${hasBill ? `<div class="grp bill"><div class="gt">${_("Facture estimée")}</div>
-        <div class="bl2"><span>${_("Énergie achetée")}</span><b>${fr(cImp, 2)} €</b></div>
-        ${!isNaN(subV) ? `<div class="bl2"><span>${_("Abonnement")} <small>(${fr(Math.round(days), 0)} ${_("j")})</small></span><b>${fr(sub, 2)} €</b></div>` : ""}
-        ${taxRate > 0 ? `<div class="bl2"><span>${_("Taxes")} <small>(${fr(taxRate, 4)} €/kWh)</small></span><b>${fr(taxImp, 2)} €</b></div>` : ""}
-        <div class="bl2"><span>${_("Revente")}</span><b class="pos">−${fr(cExp, 2)} €</b></div>
-        ${taxExp > 0 ? `<div class="bl2"><span>${_("Taxe sur revente")}</span><b>${fr(taxExp, 2)} €</b></div>` : ""}
-        <div class="bl2 tot"><span>${_("Total")}</span><b>${net < 0 ? "−" : ""}${fr(Math.abs(net), 2)} €</b></div></div>` : ""}
+        <div class="bl2"><span>${_("Énergie achetée")}</span><b>${fr(cImp, 2)} ${CUR}</b></div>
+        ${!isNaN(subV) ? `<div class="bl2"><span>${_("Abonnement")} <small>(${fr(Math.round(days), 0)} ${_("j")})</small></span><b>${fr(sub, 2)} ${CUR}</b></div>` : ""}
+        ${taxRate > 0 ? `<div class="bl2"><span>${_("Taxes")} <small>(${fr(taxRate, 4)} ${CUR}/kWh)</small></span><b>${fr(taxImp, 2)} ${CUR}</b></div>` : ""}
+        <div class="bl2"><span>${_("Revente")}</span><b class="pos">−${fr(cExp, 2)} ${CUR}</b></div>
+        ${taxExp > 0 ? `<div class="bl2"><span>${_("Taxe sur revente")}</span><b>${fr(taxExp, 2)} ${CUR}</b></div>` : ""}
+        <div class="bl2 tot"><span>${_("Total")}</span><b>${net < 0 ? "−" : ""}${fr(Math.abs(net), 2)} ${CUR}</b></div></div>` : ""}
     </ha-card>`;
     this.shadowRoot.querySelectorAll(".row").forEach((r) => r.addEventListener("click", () => {
       const ev = new Event("hass-more-info", { bubbles: true, composed: true }); ev.detail = { entityId: r.dataset.e }; this.dispatchEvent(ev);
@@ -907,8 +922,8 @@ if (!customElements.get("holm-energy-chart-v2")) {
         const unit = { hour: "h", day: _("jour"), month: _("mois") }[d.period];
         const pkLbl = new Date(pk.t).toLocaleString(NUMLOC, d.period === "hour" ? { weekday: "short", hour: "2-digit", minute: "2-digit" } : d.period === "day" ? { weekday: "short", day: "numeric", month: "short" } : { month: "long", year: "numeric" });
         const costBox = d.costPending ? `<div><small>${_("Coût")}</small><b>…</b><em>${_("calcul au prix de chaque heure")}</em></div>`
-          : d.eur != null ? `<div><small>${_("Coût")}</small><b>${frc(d.eur, 2)} €</b><em>${tot > 0 ? _("{p} €/kWh en moyenne", { p: frc(d.eur / tot, 3) }) : ""}</em></div>`
-          : o.price > 0 ? `<div><small>${_("Coût estimé")}</small><b>${frc(tot * o.price, 2)} €</b><em>${_("à {p} €/kWh", { p: frc(o.price, 3) })}</em></div>` : "";
+          : d.eur != null ? `<div><small>${_("Coût")}</small><b>${frc(d.eur, 2)} ${CUR}</b><em>${tot > 0 ? _("{p} €/kWh en moyenne", { p: frc(d.eur / tot, 3) }) : ""}</em></div>`
+          : o.price > 0 ? `<div><small>${_("Coût estimé")}</small><b>${frc(tot * o.price, 2)} ${CUR}</b><em>${_("à {p} €/kWh", { p: frc(o.price, 3) })}</em></div>` : "";
         stats = `<div><small>${_("Total")}</small><b>${fK(tot)}</b></div>${costBox}
           <div><small>${_("Moyenne / {u}", { u: unit })}</small><b>${fK(tot / d.bars.length)}</b></div><div><small>${_("Pic")}</small><b>${fK(pk.v)}</b><em>${escc(pkLbl)}</em></div>`;
         legend = `<span><i class="lbar"></i>${_("Consommation par {u}", { u: { hour: _("heure"), day: _("jour"), month: _("mois") }[d.period] })}</span>` + legend;
@@ -916,7 +931,7 @@ if (!customElements.get("holm-energy-chart-v2")) {
           const b = d.bars.find((q) => t >= q.t && t < q.t + step); if (!b) return null;
           const lbl = new Date(b.t).toLocaleString(NUMLOC, d.period === "hour" ? { weekday: "short", hour: "2-digit", minute: "2-digit" } : d.period === "day" ? { weekday: "long", day: "numeric", month: "short" } : { month: "long", year: "numeric" });
           const eur = b.eur != null ? b.eur : o.price > 0 ? b.v * o.price : null;
-          return { px: x(b.t + step / 2), py: y(b.v), html: `<small>${escc(lbl)}</small><b>${fK(b.v)}</b>${eur != null ? `<span>${b.eur != null ? "" : "≈ "}${frc(eur, 2)} €</span>` : ""}` };
+          return { px: x(b.t + step / 2), py: y(b.v), html: `<small>${escc(lbl)}</small><b>${fK(b.v)}</b>${eur != null ? `<span>${b.eur != null ? "" : "≈ "}${frc(eur, 2)} ${CUR}</span>` : ""}` };
         };
       } else {
         const pts = d.pts;
@@ -1267,13 +1282,13 @@ class HolmEnergyDevicesCard extends HTMLElement {
             <div class="bar"><i style="width:${(Math.max(0, val) / max) * 100}%;background:${x.color}"></i></div></div>
           ${c.show_sparkline !== false ? `<div class="spw">${this._spark(x.spark, x.color)}</div>` : ""}
           <div class="v">${fr(x.kwh, x.kwh < 10 ? 2 : 1)} <small>kWh</small><div class="p">${fr(pct(x.kwh), 1)} %</div></div>
-          <div class="e">${fr(x.eur, 2)} €</div></div>`;
+          <div class="e">${fr(x.eur, 2)} ${CUR}</div></div>`;
       };
       body = `
       <div class="kpis">
         <div class="kpi"><div class="kl">${_("Consommation")}</div><div class="kv">${fr(total, 1)} <small>kWh</small></div>
           <div class="ks">${d.hasHome ? `${_("maison")} ${fr(d.homeTot, 1)} kWh` : `${d.rows.length} ${_("appareils")}`}</div></div>
-        <div class="kpi"><div class="kl">${_("Coût")}</div><div class="kv">${fr(totEur, 2)} <small>€</small></div>
+        <div class="kpi"><div class="kl">${_("Coût")}</div><div class="kv">${fr(totEur, 2)} <small>${CUR}</small></div>
           <div class="ks">${{ real: _("solaire déduit"), grid: _("prix réseau"), fixed: _("prix fixe") }[c.cost_mode] || ""}</div></div>
         <div class="kpi"><div class="kl">${_("Mesuré")}</div><div class="kv">${isNaN(cover) ? "—" : fr(cover, 0) + " <small>%</small>"}</div>
           <div class="ks">${isNaN(d.solarShare) ? "" : `${_("solaire")} ${fr(d.solarShare * 100, 0)} %`}</div></div>
@@ -1281,7 +1296,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
       ${seg.length ? `<div class="stack">${seg.map((s) => `<i title="${s.n} : ${fr(pct(s.v), 1)} %" class="${s.dash ? "dash" : ""}" style="flex:${s.v};background:${s.c}"></i>`).join("")}</div>
       <div class="leg">${seg.map((s) => `<span><b class="${s.dash ? "dash" : ""}" style="background:${s.c}"></b>${s.n} <em>${fr(pct(s.v), 0)} %</em></span>`).join("")}</div>` : ""}
       <div class="tools"><div class="seg vw">${[["list", "mdi:format-list-bulleted", _("Appareils")], ["time", "mdi:chart-bar-stacked", _("Dans le temps")]].map(([k, i, l]) => `<button data-v="${k}" class="${this._view === k ? "on" : ""}" title="${l}"><ha-icon icon="${i}"></ha-icon><span>${l}</span></button>`).join("")}</div>
-        ${this._view === "list" ? `<div class="seg so">${[["kwh", "kWh"], ["eur", "€"], ["name", "A→Z"]].map(([k, l]) => `<button data-s="${k}" class="${this._sort === k ? "on" : ""}">${l}</button>`).join("")}</div>
+        ${this._view === "list" ? `<div class="seg so">${[["kwh", "kWh"], ["eur", CUR], ["name", "A→Z"]].map(([k, l]) => `<button data-s="${k}" class="${this._sort === k ? "on" : ""}">${l}</button>`).join("")}</div>
         <div class="cnt">${rows.length} ${rows.length > 1 ? _("appareils") : _("appareil")}${zero && c.hide_zero !== false ? ` · ${_("{n} à 0", { n: zero })}` : ""}</div>` : ""}</div>
       ${this._view === "time" ? this._timeline(d, rows, showUnk) : `<div class="list">${vis.map((x) => row(x)).join("")}
         ${showUnk && (this._all || rows.length <= top) ? row({ name: _("Non mesuré"), kwh: d.unk, eur: d.unkEur, spark: d.unkSpark, color: UNM, icon: "mdi:help-circle-outline" }, true) : ""}</div>
@@ -1447,8 +1462,8 @@ class HolmEnergyDevicesCard extends HTMLElement {
       const items = L.filter((l) => !this._hidden.has(l.key)).map((l) => ({ l, v: l.s[i] || 0, e: (l.e && l.e[i]) || 0 })).filter((x) => x.v >= 0.0005).sort((a, c) => c.v - a.v);
       const tv = items.reduce((a, x) => a + x.v, 0), te = items.reduce((a, x) => a + x.e, 0);
       box.querySelectorAll(".col.on").forEach((c) => c.classList.remove("on")); col.classList.add("on");
-      tip.innerHTML = `<div class="th"><b>${this._bLabel(b.t, B.g, true)}</b><span>${fr(tv, tv < 10 ? 2 : 1)} kWh · ${fr(te, 2)} €</span></div>
-        ${items.length ? items.slice(0, 8).map((x) => `<div class="tr"><span class="ti" style="--c:${x.l.color}"><ha-icon icon="${x.l.icon}"></ha-icon></span><span class="tn">${x.l.name}</span><b>${fr(x.v, x.v < 10 ? 2 : 1)} kWh</b><em>${fr(x.e, 2)} €</em></div>`).join("")
+      tip.innerHTML = `<div class="th"><b>${this._bLabel(b.t, B.g, true)}</b><span>${fr(tv, tv < 10 ? 2 : 1)} kWh · ${fr(te, 2)} ${CUR}</span></div>
+        ${items.length ? items.slice(0, 8).map((x) => `<div class="tr"><span class="ti" style="--c:${x.l.color}"><ha-icon icon="${x.l.icon}"></ha-icon></span><span class="tn">${x.l.name}</span><b>${fr(x.v, x.v < 10 ? 2 : 1)} kWh</b><em>${fr(x.e, 2)} ${CUR}</em></div>`).join("")
           + (items.length > 8 ? `<div class="tm">+ ${items.length - 8} ${_("autres")}</div>` : "") : `<div class="tm">${_("Aucune consommation")}</div>`}`;
       tip.hidden = false;
       const wr = wrap.getBoundingClientRect(), cr = col.getBoundingClientRect(), tw = tip.offsetWidth;
@@ -1495,7 +1510,7 @@ const GEN = [
     ] },
     { type: "grid", name: "", schema: [
       { name: "top", selector: { number: { min: 1, max: 100, mode: "box" } } },
-      { name: "sort", selector: { select: { mode: "dropdown", options: [{ value: "kwh", label: "kWh" }, { value: "eur", label: "€" }, { value: "name", label: _("Nom") }] } } },
+      { name: "sort", selector: { select: { mode: "dropdown", options: [{ value: "kwh", label: "kWh" }, { value: "eur", label: CUR }, { value: "name", label: _("Nom") }] } } },
       { name: "hide_zero", selector: { boolean: {} } },
       { name: "show_unmeasured", selector: { boolean: {} } },
       { name: "show_sparkline", selector: { boolean: {} } },
@@ -1587,7 +1602,9 @@ window.customCards = window.customCards || [];
 // title: Production & consommation
 // mode: energy | power          show_tabs: true       show_forecast: true
 // solar_power: sensor.puissance_solaire              (défaut : puissance solaire du tableau Énergie)
-// grid_power: sensor.puissance_reseau                 (défaut : puissance réseau du tableau Énergie)
+// grid_power: sensor.puissance_reseau                 (défaut : puissance réseau du tableau Énergie, y compris inversée ou en deux capteurs)
+// grid_power_invert: true                             (capteur négatif à l'achat et positif à la revente, ex. SolarEdge)
+// grid_power_import / grid_power_export: sensor.xxx   (deux capteurs positifs séparés : achat − revente)
 // solar_color / self_color / export_color / grid_colors: ["#4a90d9", "#e2702a"] / power_grid_color
 (() => {
 // Garde la position de défilement pendant un nouveau rendu complet de la carte (iPhone / iPad : WebKit n'a pas de
@@ -1663,13 +1680,20 @@ class HolmSolarChartCard extends HTMLElement {
     return this._pf;
   }
   _src(p) {
-    const s = { solar: [], grids: [], exports: [], solarRate: null, gridRate: null, fc: [] };
+    const s = { solar: [], grids: [], exports: [], solarRate: null, gridRate: null, gridPow: null, fc: [] };
     for (const x of p.energy_sources || []) {
       if (x.type === "solar") { if (x.stat_energy_from) s.solar.push(x.stat_energy_from); if (x.stat_rate && !s.solarRate) s.solarRate = x.stat_rate; s.fc.push(...(x.config_entry_solar_forecast || [])); }
       if (x.type === "grid") {
         for (const f of x.flow_from || (x.stat_energy_from ? [x] : [])) s.grids.push(f.stat_energy_from);
         for (const t of x.flow_to || (x.stat_energy_to ? [x] : [])) s.exports.push(t.stat_energy_to);
         const r = x.power_config?.stat_rate || x.stat_rate; if (r && !s.gridRate) s.gridRate = r;
+        // #7 : capteur inversé ou deux capteurs déclarés dans le tableau Énergie → capteurs d'origine (avec leur historique)
+        const pc = x.power_config || {};
+        if (!s.gridPow) {
+          if (pc.stat_rate_inverted) s.gridPow = { id: pc.stat_rate_inverted, sign: -1 };
+          else if (pc.stat_rate_from && pc.stat_rate_to) s.gridPow = { from: pc.stat_rate_from, to: pc.stat_rate_to };
+          else if (r) s.gridPow = { id: r, sign: 1 };
+        }
       }
     }
     return s;
@@ -1706,16 +1730,26 @@ class HolmSolarChartCard extends HTMLElement {
     try {
       if (this._mode === "power") {
         const period = span <= 2 ? "5minute" : span <= 14 ? "hour" : "day";
-        const sId = c.solar_power || src.solarRate, gId = c.grid_power || src.gridRate;
-        const ids = [sId, gId].filter(Boolean);
+        const sId = c.solar_power || src.solarRate;
+        // puissance réseau (#7) : achat positif, revente négative. Options de la carte, sinon tableau Énergie (simple, inversé ou deux capteurs)
+        const gp = c.grid_power_import ? { from: c.grid_power_import, to: c.grid_power_export || null }
+          : c.grid_power ? { id: c.grid_power, sign: c.grid_power_invert ? -1 : 1 }
+          : src.gridPow || (src.gridRate ? { id: src.gridRate, sign: 1 } : null);
+        const gId = gp ? (gp.id || gp.from) : null;
+        const ids = [sId, ...(gp ? (gp.id ? [gp.id] : [gp.from, gp.to]) : [])].filter(Boolean);
         const r = ids.length ? await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
           statistic_ids: ids, period, types: ["mean", _("max")], units: { power: "W" } }) : {};
         const T = this._slots(start, fullEnd, period);
         const pick = (id, k) => { const m = new Map((r[id] || []).map((s) => [+new Date(s.start), s[k]])); return T.map((t) => (m.has(t) ? Number(m.get(t)) : null)); };
-        const sM = sId ? pick(sId, "mean") : [], sX = sId ? pick(sId, _("max")) : [], gM = gId ? pick(gId, "mean") : [];
+        const sM = sId ? pick(sId, "mean") : [], sX = sId ? pick(sId, _("max")) : [];
+        let gM = [];
+        if (gp && gp.id) gM = pick(gp.id, "mean").map((v) => (v == null ? null : v * gp.sign));
+        else if (gp) { const a = pick(gp.from, "mean"), b = gp.to ? pick(gp.to, "mean") : T.map(() => null); gM = T.map((_t, i) => (a[i] == null && b[i] == null ? null : (a[i] || 0) - (b[i] || 0))); }
         // point « maintenant » pour une courbe à jour
         const live = !this._range.end || this._range.end > new Date();
-        const now = { s: sId ? parseFloat(this._hass.states[sId]?.state) : NaN, g: gId ? parseFloat(this._hass.states[gId]?.state) : NaN };
+        const liveW = (id) => { const st = id && this._hass.states[id]; if (!st) return NaN; const v = parseFloat(st.state); const u = String(st.attributes?.unit_of_measurement || "").toLowerCase(); return u === "kw" ? v * 1000 : u === "mw" ? v * 1e6 : v; };
+        const gNow = !gp ? NaN : gp.id ? liveW(gp.id) * gp.sign : (gp.to ? liveW(gp.from) - liveW(gp.to) : liveW(gp.from));
+        const now = { s: sId ? parseFloat(this._hass.states[sId]?.state) : NaN, g: gNow };
         const fc = await this._forecast(src.fc, "hour");
         if (seq !== this._seq) return;
         this._data = { mode: "power", period, T, sM, sX, gM, sId, gId, fc, live, now };
@@ -1979,7 +2013,8 @@ class HolmSolarChartCard extends HTMLElement {
 // ---------------- Éditeur visuel ----------------
 const L = { language: _("Langue"), title: _("Titre"), collection_key: _("Clé du sélecteur de date (vide = défaut)"), show_frame: _("Afficher le cadre de la carte"), mode: _("Vue par défaut"),
   show_tabs: _("Afficher les onglets Énergie / Puissance"), show_forecast: _("Afficher la prévision solaire"), solar_power: _("Puissance solaire (vide = tableau Énergie)"),
-  grid_power: _("Puissance réseau (vide = tableau Énergie)"), solar_color: _("Couleur production"), self_color: _("Couleur solaire consommé"), export_color: _("Couleur revente"),
+  grid_power: _("Puissance réseau (vide = tableau Énergie)"), grid_power_invert: _("Inverser le signe de la puissance réseau (capteur négatif à l'achat)"),
+  grid_power_import: _("Ou puissance d'achat seule (W, positive)"), grid_power_export: _("et puissance de revente seule (W, positive)"), solar_color: _("Couleur production"), self_color: _("Couleur solaire consommé"), export_color: _("Couleur revente"),
   grid_color_1: _("Couleur réseau 1 (HC)"), grid_color_2: _("Couleur réseau 2 (HP)"), power_grid_color: _("Couleur courbe réseau") };
 const hex2rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); if (!m) return undefined; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const rgb2hex = (a) => Array.isArray(a) ? "#" + a.map((v) => Number(v).toString(16).padStart(2, "0")).join("") : a;
@@ -1994,6 +2029,9 @@ const SCHEMA = [
   { type: "expandable", title: _("Capteurs de puissance"), icon: "mdi:flash", flatten: true, schema: [
     { name: "solar_power", selector: { entity: { domain: ["sensor"] } } },
     { name: "grid_power", selector: { entity: { domain: ["sensor"] } } },
+    { name: "grid_power_invert", selector: { boolean: {} } },
+    { name: "grid_power_import", selector: { entity: { domain: ["sensor"] } } },
+    { name: "grid_power_export", selector: { entity: { domain: ["sensor"] } } },
   ] },
   { type: "expandable", title: _("Couleurs"), icon: "mdi:palette", flatten: true, schema: [
     { type: "grid", name: "", schema: ["solar_color", "self_color", "export_color", "grid_color_1", "grid_color_2", "power_grid_color"].map((n) => ({ name: n, selector: { color_rgb: {} } })) },
@@ -2021,7 +2059,8 @@ class HolmSolarChartCardEditor extends HTMLElement {
     f.addEventListener("value-changed", (ev) => {
       ev.stopPropagation();
       const v = ev.detail.value, o = { ...this._config };
-      for (const k of ["language", "title", "mode", "collection_key", "show_tabs", "show_forecast", "show_frame", "solar_power", "grid_power"]) { if (v[k] === "" || v[k] === undefined) delete o[k]; else o[k] = v[k]; }
+      for (const k of ["language", "title", "mode", "collection_key", "show_tabs", "show_forecast", "show_frame", "solar_power", "grid_power", "grid_power_import", "grid_power_export"]) { if (v[k] === "" || v[k] === undefined) delete o[k]; else o[k] = v[k]; }
+      if (v.grid_power_invert) o.grid_power_invert = true; else delete o.grid_power_invert;
       for (const k of ["solar_color", "self_color", "export_color", "power_grid_color"]) { const h = rgb2hex(v[k]); if (!h || h === DEF[k]) delete o[k]; else o[k] = h; }
       const g1 = rgb2hex(v.grid_color_1) || DEF.grid_colors[0], g2 = rgb2hex(v.grid_color_2) || DEF.grid_colors[1];
       if (g1 === DEF.grid_colors[0] && g2 === DEF.grid_colors[1]) delete o.grid_colors; else o.grid_colors = [g1, g2];
@@ -2051,6 +2090,11 @@ window.customCards = window.customCards || [];
 //   - name: Séjour   icon: mdi:sofa
 //     heating: sensor.sejour_climatecontrol_heating_daily_electrical_consumption
 //     cooling: sensor.sejour_climatecontrol_cooling_daily_electrical_consumption
+//   - name: Maison   icon: mdi:fire                       (chauffage non électrique, #8)
+//     heating: sensor.pellets_energie
+//     cost_entity: sensor.pellets_cout_total   (statistique de coût du chauffage) — ou price: 0.085 / sensor.prix_pellets_kwh
+//     (sans cost_entity ni price : coût de la source gaz du tableau Énergie si heating en est une, sinon prix de l'électricité)
+// show_cooling: auto | true | false   (tuile Climatisation ; auto = masquée si aucune pièce n'a de climatisation)
 (() => {
 // Garde la position de défilement pendant un nouveau rendu complet de la carte (iPhone / iPad : WebKit n'a pas de
 // « scroll anchoring » et la page remontait d'un coup). On fige la hauteur de la carte et on remet le défilement en place.
@@ -2121,10 +2165,28 @@ class HolmClimateEnergyCard extends HTMLElement {
     return this._pf;
   }
   // récupère les séries + prix par créneau pour [start, end[
+  // coût du chauffage d'une pièce (#8) : cost_entity, sinon price, sinon source gaz du tableau Énergie ; null = prix de l'électricité
+  _heatCost(rm, prefs, cs) {
+    if (!rm.heating) return null;
+    if (rm.cost_entity) return { stat: rm.cost_entity };
+    if (rm.price !== undefined && rm.price !== null && rm.price !== "") return { price: rm.price };
+    for (const s of prefs.energy_sources || []) {
+      if (s.type === "gas" && s.stat_energy_from === rm.heating) {
+        const st = s.stat_cost || cs[s.stat_energy_from];
+        if (st) return { stat: st };
+        const pr = s.entity_energy_price || s.number_energy_price;
+        if (pr !== undefined && pr !== null) return { price: pr };
+      }
+    }
+    return null;
+  }
   async _fetch(start, end, period, roomIds) {
     const c = this._c, prefs = await this._prefs();
     const grids = [], solars = [], exports = [];
-    const cs = c.cost_mode !== "fixed" ? await window.__holmEnergyCosts(this._hass) : {};
+    const csAll = await window.__holmEnergyCosts(this._hass);
+    const cs = c.cost_mode !== "fixed" ? csAll : {};
+    this._hcost = c.rooms.map((rm) => this._heatCost(rm, prefs, csAll));
+    roomIds = [...roomIds, ...this._hcost.map((x) => x && x.stat).filter(Boolean)];
     if (c.cost_mode !== "fixed") for (const s of prefs.energy_sources || []) {
       if (s.type === "solar" && s.stat_energy_from) solars.push(s.stat_energy_from);
       if (s.type === "battery") { if (s.stat_energy_from) solars.push(s.stat_energy_from); if (s.stat_energy_to) exports.push(s.stat_energy_to); }
@@ -2179,7 +2241,12 @@ class HolmClimateEnergyCard extends HTMLElement {
       const rooms = c.rooms.map((rm) => {
         const h = rm.heating ? cur.ser(rm.heating) : new Map(), k = rm.cooling ? cur.ser(rm.cooling) : new Map();
         let hk = 0, ck = 0, eur = 0; const hs = [], cs = [];
-        for (const t of T) { const a = h.get(t) || 0, b = k.get(t) || 0; hk += a; ck += b; hs.push(a); cs.push(b); eur += (a + b) * cur.price(t); }
+        const hc = this._hcost?.[c.rooms.indexOf(rm)], hcS = hc && hc.stat ? cur.ser(hc.stat) : null, hcP = hc && !hc.stat ? this._num(hc.price) : NaN;
+        for (const t of T) {
+          const a = h.get(t) || 0, b = k.get(t) || 0; hk += a; ck += b; hs.push(a); cs.push(b);
+          const heatEur = hcS ? (hcS.get(t) || 0) : !isNaN(hcP) ? a * hcP : a * cur.price(t);
+          eur += heatEur + b * cur.price(t);
+        }
         return { ...rm, name: rm.name || this._hass.states[rm.heating || rm.cooling]?.attributes.friendly_name || _("Pièce"), hk, ck, kwh: hk + ck, eur, hs, cs };
       });
       // période précédente (même durée, juste avant)
@@ -2276,15 +2343,17 @@ class HolmClimateEnergyCard extends HTMLElement {
         return `<div class="tile ${this._sel === i ? "on" : ""} ${r.kwh < 0.005 ? "off" : ""}" data-i="${i}" style="--t:${dom};--a:${Math.round(8 + inten * 30)}%">
           <div class="th"><ha-icon icon="${r.icon || (r.ck > r.hk ? "mdi:snowflake" : "mdi:radiator")}"></ha-icon><span>${r.name}</span></div>
           <div class="tv">${fr(r.kwh, r.kwh < 10 ? 2 : 1)} <small>kWh</small></div>
-          <div class="te">${fr(r.eur, 2)} € ${delta(r.kwh, r.prev)}</div>
+          <div class="te">${fr(r.eur, 2)} ${CUR} ${delta(r.kwh, r.prev)}</div>
           <div class="sb">${r.kwh > 0 ? `<i style="flex:${r.hk};background:${hc}"></i><i style="flex:${r.ck};background:${cc}"></i>` : ""}</div></div>`;
       }).join("");
       const shown = sel ? [sel] : R;
+      // tuile Climatisation (#8) : auto = masquée quand aucune pièce n'a de climatisation
+      const showCool = c.show_cooling === true || c.show_cooling === "true" || (c.show_cooling !== false && c.show_cooling !== "false" && c.rooms.some((r) => r.cooling));
       body = `
-      <div class="kpis">
+      <div class="kpis ${showCool ? "" : "k2"}">
         <div class="kpi" style="--c:${hc}"><ha-icon icon="mdi:radiator"></ha-icon><div><div class="kl">${_("Chauffage")}</div><div class="kv">${fr(tH, 1)} <small>kWh</small></div></div></div>
-        <div class="kpi" style="--c:${cc}"><ha-icon icon="mdi:snowflake"></ha-icon><div><div class="kl">${_("Climatisation")}</div><div class="kv">${fr(tC, 1)} <small>kWh</small></div></div></div>
-        <div class="kpi" style="--c:#1fce8a"><ha-icon icon="mdi:currency-eur"></ha-icon><div><div class="kl">${_("Coût")}</div><div class="kv">${fr(tE, 2)} <small>€</small></div>
+        ${showCool ? `<div class="kpi" style="--c:${cc}"><ha-icon icon="mdi:snowflake"></ha-icon><div><div class="kl">${_("Climatisation")}</div><div class="kv">${fr(tC, 1)} <small>kWh</small></div></div></div>` : ""}
+        <div class="kpi" style="--c:#1fce8a"><ha-icon icon="${curIcon()}"></ha-icon><div><div class="kl">${_("Coût")}</div><div class="kv">${fr(tE, 2)} <small>${CUR}</small></div>
           ${hasPrev ? `<div class="ks">${delta(tH + tC, tP) || "="} <span>${_("vs période préc.")}</span></div>` : ""}</div></div>
       </div>
       <div class="tiles">${tiles}</div>
@@ -2305,7 +2374,7 @@ class HolmClimateEnergyCard extends HTMLElement {
       .tt { font-size:16px; font-weight:600; color:var(--primary-text-color); }
       .pd { font-size:12px; color:var(--secondary-text-color); display:flex; align-items:center; gap:4px; white-space:nowrap; }
       .pd ha-icon { --mdc-icon-size:14px; }
-      .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+      .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; } .kpis.k2 { grid-template-columns:repeat(2,1fr); }
       .kpi { display:flex; align-items:center; gap:10px; background:color-mix(in srgb, var(--primary-text-color) 5%, transparent); border-radius:14px; padding:10px 12px; }
       .kpi > ha-icon { --mdc-icon-size:20px; color:var(--c); background:color-mix(in srgb, var(--c) 20%, transparent); border-radius:50%; padding:7px; flex:none; }
       .kl { font-size:11px; color:var(--secondary-text-color); text-transform:uppercase; letter-spacing:.4px; }
@@ -2350,7 +2419,7 @@ class HolmClimateEnergyCard extends HTMLElement {
       .ax2 .hc span { font-size:10px; color:var(--secondary-text-color); white-space:nowrap; overflow:visible; }
       .empty { color:var(--secondary-text-color); font-size:13px; padding:12px 0; }
       .err { color:var(--error-color); font-size:12px; }
-      @container (max-width: 520px) { .kpis { grid-template-columns:1fr 1fr; } .kpis .kpi:last-child { grid-column:span 2; } .lg { display:none; } .hr { grid-template-columns:78px 1fr; } .tiles { grid-template-columns:repeat(2, 1fr); } }
+      @container (max-width: 520px) { .kpis { grid-template-columns:1fr 1fr; } .kpis .kpi:last-child { grid-column:span 2; } .kpis.k2 .kpi:last-child { grid-column:auto; } .lg { display:none; } .hr { grid-template-columns:78px 1fr; } .tiles { grid-template-columns:repeat(2, 1fr); } }
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
       <div class="hd"><div class="tt">${_(c.title || "")}</div>
@@ -2373,7 +2442,10 @@ class HolmClimateEnergyCard extends HTMLElement {
 const L = { language: _("Langue"), title: _("Titre"), collection_key: _("Clé du sélecteur de date (vide = défaut)"), show_frame: _("Afficher le cadre de la carte"),
   cost_mode: _("Calcul du coût"), price: _("Prix fixe (€/kWh)"), taxes_import: _("Taxes ajoutées au prix réseau (€/kWh) — vide : HOLM HP/HC si installée"),
   compare: _("Comparer à la période précédente"), view: _("Graphique par défaut"), heat_color: _("Couleur chauffage"), cool_color: _("Couleur climatisation"),
-  name: _("Nom de la pièce"), icon: _("Icône"), heating: _("Énergie chauffage (kWh)"), cooling: _("Énergie climatisation (kWh)") };
+  name: _("Nom de la pièce"), icon: _("Icône"), heating: _("Énergie chauffage (kWh)"), cooling: _("Énergie climatisation (kWh)"),
+  show_cooling: _("Tuile Climatisation") };
+// libellés propres aux pièces (le champ « price » d'une pièce n'est pas le prix fixe de la carte)
+const LR = { ...L, cost_entity: _("Coût du chauffage : statistique de coût (facultatif)"), price: _("ou prix du kWh de chauffage (facultatif)") };
 const hex2rgb = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ""); if (!m) return undefined; const n = parseInt(m[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
 const rgb2hex = (a) => Array.isArray(a) ? "#" + a.map((v) => Number(v).toString(16).padStart(2, "0")).join("") : a;
 const PD = ["input_number", "sensor", "number"];
@@ -2385,6 +2457,7 @@ const GEN = [
     { type: "grid", name: "", schema: [
       { name: "view", selector: { select: { mode: "dropdown", options: [{ value: "bars", label: _("Barres") }, { value: "heatmap", label: _("Carte de chaleur") }] } } },
       { name: "compare", selector: { boolean: {} } },
+      { name: "show_cooling", selector: { select: { mode: "dropdown", options: [{ value: "auto", label: _("Automatique (masquée sans climatisation)") }, { value: "show", label: _("Toujours affichée") }, { value: "hide", label: _("Masquée") }] } } },
       { name: "heat_color", selector: { color_rgb: {} } },
       { name: "cool_color", selector: { color_rgb: {} } },
     ] },
@@ -2402,6 +2475,7 @@ const ROOM = [
   { type: "grid", name: "", schema: [ { name: "name", selector: { text: {} } }, { name: "icon", selector: { icon: {} } } ] },
   { name: "heating", selector: { entity: { domain: ["sensor"] } } },
   { name: "cooling", selector: { entity: { domain: ["sensor"] } } },
+  { type: "grid", name: "", schema: [ { name: "cost_entity", selector: { entity: { domain: ["sensor"] } } }, { name: "price", selector: { entity: { domain: PD } } } ] },
 ];
 const DEFAULTS = { cost_mode: "real", compare: true, view: "bars", show_frame: true };
 class HolmClimateEnergyCardEditor extends HTMLElement {
@@ -2416,9 +2490,10 @@ class HolmClimateEnergyCardEditor extends HTMLElement {
     if (!this._built) this._build(); else this.querySelectorAll("ha-form").forEach((f) => (f.hass = h));
   }
   _emit() { this._last = JSON.stringify(this._config); this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: JSON.parse(this._last) }, bubbles: true, composed: true })); }
-  _form(schema, data, onChange) {
+  _form(schema, data, onChange, labels = L) {
     const f = document.createElement("ha-form");
-    f.hass = this._hass; f.schema = locSchema(schema); f.data = data; f.computeLabel = (s) => L[s.name] ? _(L[s.name]) : s.name;
+    f.hass = this._hass; f.schema = locSchema(schema); f.data = data; f.computeLabel = (s) => labels[s.name] ? _(labels[s.name]) : s.name;
+    if (labels === LR) f.computeHelper = (s) => (s.name === "cost_entity" ? _("Pour un chauffage non électrique (pellets, gaz, fioul). Vide : coût de la source gaz du tableau Énergie si le chauffage en est une, sinon prix de l'électricité.") : undefined);
     f.addEventListener("value-changed", (ev) => { ev.stopPropagation(); onChange(ev.detail.value); });
     return f;
   }
@@ -2431,13 +2506,15 @@ class HolmClimateEnergyCardEditor extends HTMLElement {
       .ih{display:flex;align-items:center;justify-content:space-between;font-weight:600;margin-bottom:4px}
       .ih span{display:flex;gap:4px} button{cursor:pointer;background:none;border:1px solid var(--divider-color);color:var(--primary-text-color);border-radius:8px;padding:4px 8px}
       .add{width:100%;padding:8px;margin-top:4px}</style><div class="gen"></div><div class="items"></div><button class="add">${_("+ Ajouter une pièce")}</button>`;
-    const data = { ...DEFAULTS, ...c, heat_color: hex2rgb(c.heat_color || HEAT), cool_color: hex2rgb(c.cool_color || COOL) };
+    const data = { ...DEFAULTS, ...c, heat_color: hex2rgb(c.heat_color || HEAT), cool_color: hex2rgb(c.cool_color || COOL),
+      show_cooling: c.show_cooling === true ? "show" : c.show_cooling === false ? "hide" : "auto" };
     this.querySelector(".gen").appendChild(this._form(GEN, data, (v) => {
       Object.assign(this._config, v); if (!v.language) delete this._config.language;
       this._config.heat_color = rgb2hex(v.heat_color); this._config.cool_color = rgb2hex(v.cool_color);
       if (this._config.heat_color === HEAT || !v.heat_color) delete this._config.heat_color;
       if (this._config.cool_color === COOL || !v.cool_color) delete this._config.cool_color;
       for (const k of ["collection_key", "price"]) if (!v[k]) delete this._config[k];
+      if (v.show_cooling === "show") this._config.show_cooling = true; else if (v.show_cooling === "hide") this._config.show_cooling = false; else delete this._config.show_cooling;
       if (!v.taxes_import || !v.taxes_import.length) delete this._config.taxes_import;
       for (const [k, dv] of Object.entries(DEFAULTS)) if (this._config[k] === dv) delete this._config[k];
       this._emit();
@@ -2450,7 +2527,7 @@ class HolmClimateEnergyCardEditor extends HTMLElement {
         const out = {};
         for (const [k, val] of Object.entries(v)) { if (val === "" || val === undefined || val === null) continue; out[k] = val; }
         this._config.rooms[i] = out; this._emit();
-      }));
+      }, LR));
       wrap.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
         const a = b.dataset.a, arr = this._config.rooms;
         if (a === "del") arr.splice(i, 1);
@@ -2745,5 +2822,5 @@ window.customCards = window.customCards || [];
 { const _pl = LANG, _pn = NUMLOC; setLang(document.querySelector("home-assistant")?.hass); window.customCards.push({ type: "holm-energy-years-card", name: _("HOLM – Totaux annuels"), description: _("Totaux annuels d'une statistique d'énergie, en frise verticale") }); LANG = _pl; NUMLOC = _pn; }
 })();
 
-console.info("%c HOLM-ENERGY-CARDS %c 1.3.0 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
+console.info("%c HOLM-ENERGY-CARDS %c 1.4.0 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
 })();

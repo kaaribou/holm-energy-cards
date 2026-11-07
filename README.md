@@ -21,7 +21,15 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
 
-### 🆕 Nouveautés de la 1.3.0
+### 🆕 Nouveautés de la 1.4.0
+
+Merci à Lheriss pour ces trois idées. Rien ne change pour une installation existante en euros, avec un compteur réseau classique et un chauffage électrique.
+
+- 💱 **La devise de Home Assistant** (#6) : les montants s'affichent dans la devise réglée dans Paramètres → Système → Général (« 2,30 CHF », « 2,30 $ »…), avec une icône adaptée. Option `currency` pour en imposer une. Voir [Devise](#-devise).
+- 🔁 **Puissance réseau inversée ou en deux capteurs** (#7) : dans *Production & consommation*, la vue Puissance reprend tous les réglages de puissance réseau du tableau Énergie (capteur normal, inversé ou deux capteurs), à partir des capteurs d'origine et de tout leur historique. Nouvelles options `grid_power_invert`, `grid_power_import` et `grid_power_export`. Voir [Puissance réseau](#puissance-réseau).
+- 🔥 **Chauffage non électrique** (#8) : dans *Chauffage & climatisation*, le coût d'un chauffage aux pellets, au gaz ou au fioul vient de sa source gaz du tableau Énergie, ou des nouvelles options de pièce `cost_entity` et `price`. La tuile Climatisation se masque toute seule quand aucune pièce n'a de climatisation (option `show_cooling`). Voir [Coût d'un chauffage non électrique](#coût-dun-chauffage-non-électrique).
+
+### Nouveautés de la 1.3.0
 
 - 🌍 **Les six cartes parlent 8 langues** : français, anglais, allemand, espagnol, italien, néerlandais, portugais et polonais, éditeurs et graphiques compris. Elles suivent la langue de votre profil Home Assistant (anglais si votre langue n'est pas traduite) ; l'option `language`, disponible sur chaque carte, permet d'en imposer une. Les nombres et les dates suivent aussi la langue.
 - Les titres par défaut (« Bilan énergétique », « Consommation par appareil »…) sont traduits eux aussi, même enregistrés dans la configuration.
@@ -174,7 +182,31 @@ mode: energy
 | `mode` | Vue par défaut : `energy` ou `power` | `energy` |
 | `show_tabs`, `show_forecast` | Onglets Énergie / Puissance, prévision solaire | `true` |
 | `solar_power`, `grid_power` | Capteurs de puissance | ceux du tableau Énergie |
+| `grid_power_invert` | `true` si votre capteur `grid_power` est **négatif à l'achat** et positif à la revente | `false` |
+| `grid_power_import`, `grid_power_export` | Deux capteurs positifs séparés, achat et revente, à la place de `grid_power` | — |
 | `solar_color`, `self_color`, `export_color`, `grid_colors`, `power_grid_color` | Couleurs | — |
+
+### Puissance réseau
+
+La vue **Puissance** trace la puissance réseau **au-dessus de l'axe quand vous achetez** et **en dessous quand vous revendez**. Sans option, la carte reprend le réglage de puissance du réseau du tableau Énergie, quelle que soit sa forme :
+
+- **un capteur standard**, positif à l'achat et négatif à la revente : utilisé tel quel ;
+- **un capteur inversé**, négatif à l'achat (c'est le cas du compteur SolarEdge M1, par exemple) : son signe est inversé ;
+- **deux capteurs séparés**, achat et revente, tous deux positifs : la carte calcule achat − revente.
+
+Dans les deux derniers cas, Home Assistant crée un capteur intermédiaire qui démarre sans historique. La carte lit directement **vos capteurs d'origine**, avec tout leur historique.
+
+Pour choisir vous-même :
+
+```yaml
+# capteur négatif à l'achat
+grid_power: sensor.solaredge_m1_ac_power
+grid_power_invert: true
+
+# ou deux capteurs positifs
+grid_power_import: sensor.puissance_achat
+grid_power_export: sensor.puissance_revente
+```
 
 ## 🌡️ Chauffage & climatisation
 
@@ -199,11 +231,36 @@ rooms:
 
 | Option | Description | Par défaut |
 |---|---|---|
-| `rooms` | Pièces : `name`, `icon`, `heating`, `cooling` (kWh) (**obligatoire**) | — |
+| `rooms` | Pièces : `name`, `icon`, `heating`, `cooling` (kWh) (**obligatoire**), et pour un chauffage non électrique `cost_entity` ou `price` (voir ci-dessous) | — |
 | `cost_mode`, `price`, `taxes_import` | Calcul du coût (voir Consommation par appareil) | `real` |
 | `compare` | Comparer à la période précédente | `true` |
 | `view` | `bars` ou `heatmap` | `bars` |
 | `heat_color`, `cool_color` | Couleurs | orange / bleu |
+| `show_cooling` | Tuile Climatisation : `true` (toujours), `false` (jamais) ; sans option, masquée quand aucune pièce n'a de `cooling` | automatique |
+
+### Coût d'un chauffage non électrique
+
+Par défaut, le chauffage et la climatisation sont comptés **au prix de l'électricité** (voir [D'où viennent les prix ?](#-doù-viennent-les-prix-)). Pour une chaudière à pellets, au gaz ou au fioul, ce prix est faux. Le coût du **chauffage** d'une pièce est pris, dans cet ordre :
+
+1. `cost_entity` : une **statistique de coût** (en €, qui ne fait que monter, comme celle d'une source du tableau Énergie). La carte en reprend la hausse sur la période ;
+2. `price` : un **prix du kWh** de chauffage, en nombre ou depuis une entité ;
+3. sinon, si l'entité `heating` est déclarée comme **source gaz dans le tableau Énergie**, le coût de cette source : sa statistique de coût, le coût que Home Assistant enregistre pour elle, ou son prix ;
+4. sinon, le prix de l'électricité, comme avant.
+
+La climatisation reste toujours comptée au prix de l'électricité.
+
+```yaml
+rooms:
+  - name: Maison
+    icon: mdi:fire
+    heating: sensor.pellets_energie            # source gaz du tableau Énergie : rien d'autre à faire
+  - name: Atelier
+    icon: mdi:fire
+    heating: sensor.poele_energie
+    cost_entity: sensor.poele_cout_total       # ou : price: 0.085
+```
+
+L'entité `heating` doit être en **kWh**. Une source gaz du tableau Énergie mesurée en m³ ne convient pas : il faut un capteur converti en kWh.
 
 ## 📅 Énergie par année
 
@@ -250,6 +307,12 @@ label: Production
 | `start_year` | Première année prise en compte | `2000` |
 
 Toutes les cartes acceptent aussi `language` (`fr`, `en`, `de`, `es`, `it`, `nl`, `pt`, `pl` ; par défaut celle du profil), `show_frame: false` (sans cadre) et, pour celles qui suivent le sélecteur de date, `collection_key` si le tableau de bord en contient plusieurs.
+
+## 💱 Devise
+
+Les montants s'affichent dans la **devise de Home Assistant** (Paramètres → Système → Général → Devise) : « 2,30 € », « 2,30 CHF », « 2,30 $ »… L'icône des coûts suit la devise quand il en existe une (€, $, £…), sinon c'est un billet. La carte n'effectue **aucune conversion** : les montants viennent de vos capteurs et de vos prix, qui sont déjà dans votre devise.
+
+Pour imposer une devise sur une carte : `currency: CHF` (code à 3 lettres).
 
 ## 💶 D'où viennent les prix ?
 
