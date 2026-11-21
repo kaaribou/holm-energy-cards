@@ -23,7 +23,13 @@ HOLM Energy Cards builds on the Home Assistant **Energy dashboard**: sources, de
 
 *Screenshots in French — the cards follow the language of your Home Assistant profile.*
 
-### 🆕 What's new in 1.4.0
+### 🆕 What's new in 1.4.1
+
+- 🔒 **Security**: in all six cards, names (configured, taken from an entity or from the Energy dashboard), titles, labels and icons are escaped before being displayed. A name containing `<` or `"` is shown as is and can no longer run code.
+- 🎨 **Validated colours**: every colour option (`color`, `solar_color`, `grid_colors`, `heat_color`…) accepts `#1f6aa8`, `rgb(…)` / `rgba(…)`, `hsl(…)`, `var(--my-variable)` or a colour name (`red`). Any other value is ignored and the default colour is used.
+- 🐛 **Fix**: in Spanish, Portuguese and Polish, the Power view of *Production & consumption* showed an error and the device chart fell back to raw history. The `min` / `max` statistics are now requested correctly in every language.
+
+### What's new in 1.4.0
 
 Thanks to Lheriss for these three ideas. Nothing changes for an existing setup in euros, with a standard grid meter and electric heating.
 
@@ -68,10 +74,11 @@ Thanks to Lheriss for these three ideas. Nothing changes for an existing setup i
 
 ### With HACS (recommended)
 
-1. HACS → ⋮ menu → **Custom repositories**.
-2. Add `https://github.com/kaaribou/holm-energy-cards`, category **Dashboard** (*Plugin*).
-3. Search for the cards → **Download**.
-4. Reload the page (Ctrl + F5).
+1. Open **HACS** and search for **HOLM Energy Cards**.
+2. Open the repository → **Download**.
+3. Reload the page (Ctrl + F5).
+
+> If the cards do not show up in the search yet: HACS → ⋮ menu → **Custom repositories**, add `https://github.com/kaaribou/holm-energy-cards`, category **Dashboard** (*Plugin*), then start again at step 1.
 
 ### Manually
 

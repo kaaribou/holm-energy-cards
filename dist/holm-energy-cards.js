@@ -1,4 +1,4 @@
-/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.4.0
+/* HOLM Energy Cards — https://github.com/kaaribou/holm-energy-cards — licence MIT — v1.4.1
  * Bilan énergétique, consommation par appareil, production & consommation, chauffage & climatisation,
  * énergie par année (barres) et totaux annuels (frise). Un seul fichier, six cartes.
  */
@@ -262,6 +262,27 @@
   const curIcon = () => ({ EUR: "mdi:currency-eur", USD: "mdi:currency-usd", GBP: "mdi:currency-gbp", JPY: "mdi:currency-jpy", CNY: "mdi:currency-cny", INR: "mdi:currency-inr", RUB: "mdi:currency-rub", KRW: "mdi:currency-krw", TRY: "mdi:currency-try", BRL: "mdi:currency-brl", PLN: "mdi:currency-pln" }[CUR_CODE] || "mdi:cash");
   const setLang = (hass, c) => { LANG = langOf(hass, c); const p = hass && hass.locale && hass.locale.language; NUMLOC = !(c && c.language) && p && p.toLowerCase().startsWith(LANG) ? p : LOCALES[LANG]; setCur(hass, c); return LANG; };
   const _ = (s, v) => { let o = LANG === "fr" ? s : ((I18N[s] && I18N[s][HOLM_LANGS.indexOf(LANG)]) || s); if (v) for (const k in v) o = o.split("{" + k + "}").join(v[k]); return CUR === "€" ? o : o.split("€").join(CUR); };
+  // ---- sécurité : échappement HTML partagé par les six cartes, et validation des couleurs de la configuration ----
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+  // Couleurs acceptées : #hex, rgb()/rgba()/hsl()/hsla() avec des nombres, var(--nom[, repli]) ou un nom de couleur CSS.
+  const COLOR_RE = /^(#[0-9a-f]{3,8}|(rgba?|hsla?)\(\s*[\d.\s,%/+-]+\)|var\(--[\w-]+(\s*,\s*(#[0-9a-f]{3,8}|[a-z]+))?\)|[a-z]+)$/i;
+  const cssColor = (v, def) => (typeof v === "string" && COLOR_RE.test(v.trim()) ? v.trim() : def);
+  // Copie de la configuration où toute clé « color », « xxx_color » ou « xxx_colors » invalide est retirée (la couleur par défaut s'applique).
+  const cleanColors = (cfg) => {
+    if (!cfg || typeof cfg !== "object") return cfg;
+    const walk = (o) => {
+      if (Array.isArray(o)) return o.map(walk);
+      if (!o || typeof o !== "object") return o;
+      const out = {};
+      for (const [k, v] of Object.entries(o)) {
+        if (/(^|_)colou?r$/i.test(k)) { const ok = cssColor(v, null); if (ok != null) out[k] = ok; }
+        else if (/(^|_)colou?rs$/i.test(k) && Array.isArray(v)) { const ok = v.map((x) => cssColor(x, null)).filter((x) => x != null); if (ok.length) out[k] = ok; }
+        else out[k] = walk(v);
+      }
+      return out;
+    };
+    return walk(cfg);
+  };
   // champ « Langue » pour les éditeurs visuels (ha-form)
   const langField = () => ({ name: "language", selector: { select: { mode: "dropdown", options: [{ value: "", label: _("Automatique (profil)") }, ...Object.entries(LANG_NAMES).map(([value, label]) => ({ value, label }))] } } });
   // traduit les titres de sections et les libellés d'options d'un schéma ha-form (écrits en français)
@@ -345,6 +366,7 @@ window.__holmEnergyCosts = window.__holmEnergyCosts || function (hass) {
 };
 class HolmEnergySourcesCard extends HTMLElement {
   setConfig(c) {
+    c = cleanColors(c); // couleurs de la configuration validées avant tout affichage
     if (!c || !Array.isArray(c.items) || !c.items.length) throw new Error("holm-energy-sources-card : 'items' est requis");
     this._c = { title: "Bilan énergétique", show_frame: true, ...c };
     this._range = null; this._data = null;
@@ -466,8 +488,8 @@ class HolmEnergySourcesCard extends HTMLElement {
       return `<div class="grp"><div class="gt">${title}</div>${rows.map((x) => {
         const col = x.color || DEF[t].color;
         const name = x.name || this._hass?.states[x.entity]?.attributes.friendly_name || x.entity;
-        return `<div class="row" data-e="${x.entity}"><div class="ic sm" style="--c:${col}"><ha-icon icon="${x.icon || DEF[t].icon}"></ha-icon></div>
-          <div class="nm"><div class="n">${name}</div><div class="bar"><i style="width:${(Math.abs(x.kwh) / max) * 100}%;background:${col}"></i></div></div>
+        return `<div class="row" data-e="${esc(x.entity)}"><div class="ic sm" style="--c:${esc(col)}"><ha-icon icon="${esc(x.icon || DEF[t].icon)}"></ha-icon></div>
+          <div class="nm"><div class="n">${esc(name)}</div><div class="bar"><i style="width:${(Math.abs(x.kwh) / max) * 100}%;background:${esc(col)}"></i></div></div>
           <div class="v">${fr(x.kwh, 2)} <small>kWh</small></div>
           <div class="e ${t === "export" ? "pos" : ""}">${isNaN(x.eur) ? "" : (t === "export" ? "+" : "") + fr(x.eur, 2) + " " + CUR}</div></div>`;
       }).join("")}${extra}</div>`;
@@ -525,9 +547,9 @@ class HolmEnergySourcesCard extends HTMLElement {
       @media (max-width:420px) { .kv { font-size:15px; } .bl .b { font-size:20px; } }
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
-      <div class="hd"><div class="tt">${_(c.title || "")}</div>
+      <div class="hd"><div class="tt">${esc(_(c.title || ""))}</div>
         <div class="pd" title="${this._linked ? _("Suit le sélecteur de date") : _("Aucun sélecteur de date trouvé : aujourd'hui")}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div></div>
-      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${esc(_(this._err))}</div>` : ""}
       <div class="kpis">
         ${kpi(DEF.solar.icon, DEF.solar.color, _("Production"), `${fr(prod, 1)} <small>kWh</small>`, "")}
         ${kpi(DEF.import.icon, DEF.import.color, _("Achat réseau"), `${fr(imp, 1)} <small>kWh</small>`, `${fr(cImp, 2)} ${CUR}`)}
@@ -540,7 +562,7 @@ class HolmEnergySourcesCard extends HTMLElement {
         ${ring(autoS, "#1fce8a", _("Auto-<br>suffisance"))}
       </div>
       ${group("solar", _("Production"), by("solar").length ? `<div class="row sub"><div class="ic sm" style="--c:#1fce8a"><ha-icon icon="mdi:home-lightning-bolt"></ha-icon></div>
-          <div class="nm"><div class="n">${c.self_name || _("Consommée sur place")}</div><div class="bar"><i style="width:${prod > 0 ? (self / prod) * 100 : 0}%;background:#1fce8a"></i></div></div>
+          <div class="nm"><div class="n">${esc(c.self_name || _("Consommée sur place"))}</div><div class="bar"><i style="width:${prod > 0 ? (self / prod) * 100 : 0}%;background:#1fce8a"></i></div></div>
           <div class="v">${fr(self, 2)} <small>kWh</small></div><div class="e pos" title="${_("Économie : kWh non achetés au réseau")}">${isNaN(selfEur) ? "" : fr(selfEur, 2) + " " + CUR}</div></div>` : "")}
       ${group("import", _("Réseau — achat"))}${group("export", _("Réseau — revente"))}
       ${hasBill ? `<div class="grp bill"><div class="gt">${_("Facture estimée")}</div>
@@ -752,7 +774,7 @@ if (!customElements.get("holm-energy-chart-v2")) {
     _build() {
       const o = this._o;
       this.shadowRoot.innerHTML = `<style>${HolmEnergyChart.css()}</style>
-        <div class="bg" style="--ac:${o.color || "#0abfbf"};--out:${o.outColor || "#9b6fd6"}"><div class="dlg" role="dialog" aria-label="${escc(o.name)}">
+        <div class="bg" style="--ac:${escc(o.color || "#0abfbf")};--out:${escc(o.outColor || "#9b6fd6")}"><div class="dlg" role="dialog" aria-label="${escc(o.name)}">
           <div class="hd"><div class="ico"><ha-icon icon="${escc(o.icon || "mdi:flash")}"></ha-icon></div>
             <div class="tt"><b>${escc(o.name)}</b><small>${escc(o.subtitle || (o.mode === "energy" ? _("Consommation") : _("Puissance")))}</small></div>
             ${o.entity ? `<button class="det" title="${_("Détails")}"><ha-icon icon="mdi:information-outline"></ha-icon></button>` : ""}
@@ -862,7 +884,7 @@ if (!customElements.get("holm-energy-chart-v2")) {
       const kw = (this._hass.states[id]?.attributes.unit_of_measurement || "") === "kW";
       const hrs = (end - start) / 3600e3;
       try {
-        const st = await this._stats([id], start, end, hrs <= 72 ? "5minute" : "hour", ["mean", _("min"), _("max")]);
+        const st = await this._stats([id], start, end, hrs <= 72 ? "5minute" : "hour", ["mean", "min", "max"]);
         const rows = st[id] || [];
         if (rows.length > 2) return rows.map((s) => ({ t: +new Date(s.start), v: Number(s.mean), lo: Number(s.min), hi: Number(s.max) })).filter((p) => !isNaN(p.v));
       } catch (e) { /* pas de statistiques : historique */ }
@@ -1073,6 +1095,7 @@ const iconFor = (n) => (ICONS.find(([r]) => r.test(n)) || [0, "mdi:flash"])[1];
 
 class HolmEnergyDevicesCard extends HTMLElement {
   setConfig(c) {
+    c = cleanColors(c); // couleurs de la configuration validées avant tout affichage
     this._c = { title: "Consommation par appareil", cost_mode: "real", top: 10, hide_zero: true, show_unmeasured: true, show_sparkline: true, sort: "kwh", show_frame: true, ...c };
     this._sort = this._c.sort; this._all = false;
     this._view = this._view || (this._c.view === "timeline" ? "time" : "list"); this._hidden = this._hidden || new Set();
@@ -1243,7 +1266,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
     const max = Math.max(...vals, 1e-9), w = 72, h = 22, n = vals.length, bw = w / n;
     return `<svg class="sp" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${vals.map((v, i) => {
       const bh = v > 0 ? Math.max(1, (v / max) * h) : 0;
-      return bh ? `<rect x="${(i * bw + bw * 0.12).toFixed(2)}" y="${(h - bh).toFixed(2)}" width="${(bw * 0.76).toFixed(2)}" height="${bh.toFixed(2)}" rx="${Math.min(1.5, bw * 0.3).toFixed(2)}" fill="${color}"/>` : "";
+      return bh ? `<rect x="${(i * bw + bw * 0.12).toFixed(2)}" y="${(h - bh).toFixed(2)}" width="${(bw * 0.76).toFixed(2)}" height="${bh.toFixed(2)}" rx="${Math.min(1.5, bw * 0.3).toFixed(2)}" fill="${esc(color)}"/>` : "";
     }).join("")}</svg>`;
   }
   _render() {
@@ -1276,10 +1299,10 @@ class HolmEnergyDevicesCard extends HTMLElement {
       const pct = (v) => (total > 0 ? (v / total) * 100 : 0);
       const row = (x, unk = false) => {
         const val = this._sort === "eur" ? x.eur : x.kwh;
-        return `<div class="row ${unk ? "unk" : ""}" ${unk ? "" : `data-e="${x.entity}"`}>
-          <div class="ic" style="--c:${x.color}"><ha-icon icon="${x.icon}"></ha-icon></div>
-          <div class="nm"><div class="n">${x.name}</div>
-            <div class="bar"><i style="width:${(Math.max(0, val) / max) * 100}%;background:${x.color}"></i></div></div>
+        return `<div class="row ${unk ? "unk" : ""}" ${unk ? "" : `data-e="${esc(x.entity)}"`}>
+          <div class="ic" style="--c:${esc(x.color)}"><ha-icon icon="${esc(x.icon)}"></ha-icon></div>
+          <div class="nm"><div class="n">${esc(x.name)}</div>
+            <div class="bar"><i style="width:${(Math.max(0, val) / max) * 100}%;background:${esc(x.color)}"></i></div></div>
           ${c.show_sparkline !== false ? `<div class="spw">${this._spark(x.spark, x.color)}</div>` : ""}
           <div class="v">${fr(x.kwh, x.kwh < 10 ? 2 : 1)} <small>kWh</small><div class="p">${fr(pct(x.kwh), 1)} %</div></div>
           <div class="e">${fr(x.eur, 2)} ${CUR}</div></div>`;
@@ -1293,8 +1316,8 @@ class HolmEnergyDevicesCard extends HTMLElement {
         <div class="kpi"><div class="kl">${_("Mesuré")}</div><div class="kv">${isNaN(cover) ? "—" : fr(cover, 0) + " <small>%</small>"}</div>
           <div class="ks">${isNaN(d.solarShare) ? "" : `${_("solaire")} ${fr(d.solarShare * 100, 0)} %`}</div></div>
       </div>
-      ${seg.length ? `<div class="stack">${seg.map((s) => `<i title="${s.n} : ${fr(pct(s.v), 1)} %" class="${s.dash ? "dash" : ""}" style="flex:${s.v};background:${s.c}"></i>`).join("")}</div>
-      <div class="leg">${seg.map((s) => `<span><b class="${s.dash ? "dash" : ""}" style="background:${s.c}"></b>${s.n} <em>${fr(pct(s.v), 0)} %</em></span>`).join("")}</div>` : ""}
+      ${seg.length ? `<div class="stack">${seg.map((s) => `<i title="${esc(s.n)} : ${fr(pct(s.v), 1)} %" class="${s.dash ? "dash" : ""}" style="flex:${s.v};background:${esc(s.c)}"></i>`).join("")}</div>
+      <div class="leg">${seg.map((s) => `<span><b class="${s.dash ? "dash" : ""}" style="background:${esc(s.c)}"></b>${esc(s.n)} <em>${fr(pct(s.v), 0)} %</em></span>`).join("")}</div>` : ""}
       <div class="tools"><div class="seg vw">${[["list", "mdi:format-list-bulleted", _("Appareils")], ["time", "mdi:chart-bar-stacked", _("Dans le temps")]].map(([k, i, l]) => `<button data-v="${k}" class="${this._view === k ? "on" : ""}" title="${l}"><ha-icon icon="${i}"></ha-icon><span>${l}</span></button>`).join("")}</div>
         ${this._view === "list" ? `<div class="seg so">${[["kwh", "kWh"], ["eur", CUR], ["name", "A→Z"]].map(([k, l]) => `<button data-s="${k}" class="${this._sort === k ? "on" : ""}">${l}</button>`).join("")}</div>
         <div class="cnt">${rows.length} ${rows.length > 1 ? _("appareils") : _("appareil")}${zero && c.hide_zero !== false ? ` · ${_("{n} à 0", { n: zero })}` : ""}</div>` : ""}</div>
@@ -1385,9 +1408,9 @@ class HolmEnergyDevicesCard extends HTMLElement {
       @container (max-width: 440px) { .spw { display:none; } .row { grid-template-columns:auto minmax(0,1fr) 72px 56px; gap:8px; } .kv { font-size:16px; } }
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
-      <div class="hd"><div class="tt">${_(c.title || "")}</div>
+      <div class="hd"><div class="tt">${esc(_(c.title || ""))}</div>
         <div class="pd" title="${this._linked ? _("Suit le sélecteur de date") : _("Aucun sélecteur de date trouvé : aujourd'hui")}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div></div>
-      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${esc(_(this._err))}</div>` : ""}
       ${body}
     </ha-card>`;
     const sr = this.shadowRoot;
@@ -1436,8 +1459,8 @@ class HolmEnergyDevicesCard extends HTMLElement {
       const dom = segs.filter((x) => x.l.entity).reduce((a, x) => (!a || x.v > a.v ? x : a), null);
       const h = (tot[i] / top) * 100;
       return `<div class="col" data-i="${i}"><div class="stk" style="height:${h.toFixed(2)}%">
-        ${icons && dom && h > 0 ? `<span class="dom" style="--c:${dom.l.color}" title="${dom.l.name}"><ha-icon icon="${dom.l.icon}"></ha-icon></span>` : ""}
-        ${segs.map((x) => `<i class="${x.l.dash ? "dash" : ""}" style="flex:${x.v};background:${x.l.color}"></i>`).join("")}</div>
+        ${icons && dom && h > 0 ? `<span class="dom" style="--c:${esc(dom.l.color)}" title="${esc(dom.l.name)}"><ha-icon icon="${esc(dom.l.icon)}"></ha-icon></span>` : ""}
+        ${segs.map((x) => `<i class="${x.l.dash ? "dash" : ""}" style="flex:${x.v};background:${esc(x.l.color)}"></i>`).join("")}</div>
         <em>${i % every === 0 ? this._bLabel(b.t, B.g) : ""}</em></div>`;
     }).join("");
     const unit = { hour: _("heure"), day: _("jour"), month: _("mois") }[B.g];
@@ -1445,8 +1468,8 @@ class HolmEnergyDevicesCard extends HTMLElement {
       <div class="tlh"><span>${_("kWh par {u}", { u: unit })}</span><span class="tly">${fr(top, top < 10 ? 1 : 0)}</span></div>
       <div class="tlc"><div class="gl" style="bottom:50%"><b>${fr(top / 2, top < 10 ? 1 : 0)}</b></div><div class="gl" style="bottom:100%"></div>
         <div class="cols">${cols}</div><div class="tip" hidden></div></div>
-      <div class="tll">${L.map((l) => `<button class="lc ${this._hidden.has(l.key) ? "off" : ""}" data-k="${l.key}" style="--c:${l.color}" title="${_("Afficher / masquer")}">
-        <span class="li ${l.dash ? "dash" : ""}"><ha-icon icon="${l.icon}"></ha-icon></span>${l.name}<small>${fr(l.kwh, l.kwh < 10 ? 1 : 0)} kWh</small></button>`).join("")}</div>
+      <div class="tll">${L.map((l) => `<button class="lc ${this._hidden.has(l.key) ? "off" : ""}" data-k="${esc(l.key)}" style="--c:${esc(l.color)}" title="${_("Afficher / masquer")}">
+        <span class="li ${l.dash ? "dash" : ""}"><ha-icon icon="${esc(l.icon)}"></ha-icon></span>${esc(l.name)}<small>${fr(l.kwh, l.kwh < 10 ? 1 : 0)} kWh</small></button>`).join("")}</div>
       <div class="tln">${_("Touchez une barre pour le détail, une étiquette pour masquer un appareil.")}</div></div>`;
   }
   _bindTimeline(sr) {
@@ -1463,7 +1486,7 @@ class HolmEnergyDevicesCard extends HTMLElement {
       const tv = items.reduce((a, x) => a + x.v, 0), te = items.reduce((a, x) => a + x.e, 0);
       box.querySelectorAll(".col.on").forEach((c) => c.classList.remove("on")); col.classList.add("on");
       tip.innerHTML = `<div class="th"><b>${this._bLabel(b.t, B.g, true)}</b><span>${fr(tv, tv < 10 ? 2 : 1)} kWh · ${fr(te, 2)} ${CUR}</span></div>
-        ${items.length ? items.slice(0, 8).map((x) => `<div class="tr"><span class="ti" style="--c:${x.l.color}"><ha-icon icon="${x.l.icon}"></ha-icon></span><span class="tn">${x.l.name}</span><b>${fr(x.v, x.v < 10 ? 2 : 1)} kWh</b><em>${fr(x.e, 2)} ${CUR}</em></div>`).join("")
+        ${items.length ? items.slice(0, 8).map((x) => `<div class="tr"><span class="ti" style="--c:${esc(x.l.color)}"><ha-icon icon="${esc(x.l.icon)}"></ha-icon></span><span class="tn">${esc(x.l.name)}</span><b>${fr(x.v, x.v < 10 ? 2 : 1)} kWh</b><em>${fr(x.e, 2)} ${CUR}</em></div>`).join("")
           + (items.length > 8 ? `<div class="tm">+ ${items.length - 8} ${_("autres")}</div>` : "") : `<div class="tm">${_("Aucune consommation")}</div>`}`;
       tip.hidden = false;
       const wr = wrap.getBoundingClientRect(), cr = col.getBoundingClientRect(), tw = tip.offsetWidth;
@@ -1634,6 +1657,7 @@ const hhmm = (t) => new Date(t).toLocaleTimeString(NUMLOC, { hour: "2-digit", mi
 
 class HolmSolarChartCard extends HTMLElement {
   setConfig(c) {
+    c = cleanColors(c); // couleurs de la configuration validées avant tout affichage
     this._c = { title: "Production & consommation", mode: "energy", show_tabs: true, show_forecast: true, show_frame: true, ...c };
     this._mode = this._c.mode;
     if (this.shadowRoot) this._render();
@@ -1738,10 +1762,10 @@ class HolmSolarChartCard extends HTMLElement {
         const gId = gp ? (gp.id || gp.from) : null;
         const ids = [sId, ...(gp ? (gp.id ? [gp.id] : [gp.from, gp.to]) : [])].filter(Boolean);
         const r = ids.length ? await window.__holmStats(this._hass, { type: "recorder/statistics_during_period", start_time: start.toISOString(), end_time: end.toISOString(),
-          statistic_ids: ids, period, types: ["mean", _("max")], units: { power: "W" } }) : {};
+          statistic_ids: ids, period, types: ["mean", "max"], units: { power: "W" } }) : {};
         const T = this._slots(start, fullEnd, period);
         const pick = (id, k) => { const m = new Map((r[id] || []).map((s) => [+new Date(s.start), s[k]])); return T.map((t) => (m.has(t) ? Number(m.get(t)) : null)); };
-        const sM = sId ? pick(sId, "mean") : [], sX = sId ? pick(sId, _("max")) : [];
+        const sM = sId ? pick(sId, "mean") : [], sX = sId ? pick(sId, "max") : [];
         let gM = [];
         if (gp && gp.id) gM = pick(gp.id, "mean").map((v) => (v == null ? null : v * gp.sign));
         else if (gp) { const a = pick(gp.from, "mean"), b = gp.to ? pick(gp.to, "mean") : T.map(() => null); gM = T.map((_t, i) => (a[i] == null && b[i] == null ? null : (a[i] || 0) - (b[i] || 0))); }
@@ -1835,8 +1859,8 @@ class HolmSolarChartCard extends HTMLElement {
       for (const s of seg) {
         if (s[0] <= 0) continue;
         const h = s[0] * k; yy -= h;
-        g += s.top ? `<path d="M${x(i) + off},${yy + h} v${-(h - Math.min(r, h))} q0,${-Math.min(r, h)} ${Math.min(r, h)},${-Math.min(r, h)} h${w - 2 * Math.min(r, h)} q${Math.min(r, h)},0 ${Math.min(r, h)},${Math.min(r, h)} v${h - Math.min(r, h)} z" fill="${s[1]}"/>`
-          : `<rect x="${x(i) + off}" y="${yy}" width="${w}" height="${h}" fill="${s[1]}"/>`;
+        g += s.top ? `<path d="M${x(i) + off},${yy + h} v${-(h - Math.min(r, h))} q0,${-Math.min(r, h)} ${Math.min(r, h)},${-Math.min(r, h)} h${w - 2 * Math.min(r, h)} q${Math.min(r, h)},0 ${Math.min(r, h)},${Math.min(r, h)} v${h - Math.min(r, h)} z" fill="${esc(s[1])}"/>`
+          : `<rect x="${x(i) + off}" y="${yy}" width="${w}" height="${h}" fill="${esc(s[1])}"/>`;
       }
       if (d.exp[i] > 0) { const h = d.exp[i] * k; g += `<path d="M${x(i) + off},${y0} v${h - Math.min(r, h)} q0,${Math.min(r, h)} ${Math.min(r, h)},${Math.min(r, h)} h${w - 2 * Math.min(r, h)} q${Math.min(r, h)},0 ${Math.min(r, h)},${-Math.min(r, h)} v${-(h - Math.min(r, h))} z" fill="${col.exp}"/>`; }
       if (d.fc && d.fc[i] > 0) { const yf = y0 - d.fc[i] * k; g += `<line x1="${x(i) + off - 1}" x2="${x(i) + off + w + 1}" y1="${yf}" y2="${yf}" class="fc"/>`; }
@@ -1845,7 +1869,7 @@ class HolmSolarChartCard extends HTMLElement {
     g += this._axisX(d.T, d.period, x, H, bw);
     this._tip = { n, x0: pl, bw, h: H, html: (i) => {
       const rows = [[col.self, _("Solaire consommé"), d.self[i]], ...d.grids.map((gg, j) => [col.grids[j % col.grids.length], gg.name, gg.v[i]]), [col.exp, _("Revendu"), d.exp[i]]];
-      return `<b>${this._tlab(d.T[i], d.period, true)}</b>${rows.map(([cc, l, v]) => `<div><i style="background:${cc}"></i>${l}<span>${fr(v, 2)} kWh</span></div>`).join("")}
+      return `<b>${this._tlab(d.T[i], d.period, true)}</b>${rows.map(([cc, l, v]) => `<div><i style="background:${esc(cc)}"></i>${esc(l)}<span>${fr(v, 2)} kWh</span></div>`).join("")}
         <div class="tt2"><i style="background:${col.solar}"></i>${_("Production")}<span>${fr(d.sol[i], 2)} kWh</span></div>${d.fc && d.fc[i] != null ? `<div><i class="fcd"></i>${_("Prévision")}<span>${fr(d.fc[i], 2)} kWh</span></div>` : ""}`;
     } };
     return `<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}">${g}<rect class="hov" x="0" y="0" width="0" height="${H - pb}"/></svg>`;
@@ -1909,7 +1933,7 @@ class HolmSolarChartCard extends HTMLElement {
     let chips = "", chart = `<div class="empty">${_("Chargement…")}</div>`;
     this._tip = null;
     if (d && d.mode === this._mode) {
-      const chip = (color, label, val, dash) => `<div class="chip"><i class="${dash ? "fcd" : ""}" style="${dash ? "" : `background:${color}`}"></i><div><div class="cl">${label}</div><div class="cv">${val}</div></div></div>`;
+      const chip = (color, label, val, dash) => `<div class="chip"><i class="${dash ? "fcd" : ""}" style="${dash ? "" : `background:${esc(color)}`}"></i><div><div class="cl">${esc(label)}</div><div class="cv">${val}</div></div></div>`;
       if (d.mode === "energy") {
         const S = (a) => a.reduce((x, v) => x + v, 0);
         const prod = S(d.sol), self = S(d.self), exp = S(d.exp);
@@ -1976,12 +2000,12 @@ class HolmSolarChartCard extends HTMLElement {
       .err { color:var(--error-color); font-size:12px; }
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
-      <div class="hd"><div class="tt">${_(c.title || "")}</div>
+      <div class="hd"><div class="tt">${esc(_(c.title || ""))}</div>
         <div class="rt">
           <div class="pd" title="${this._linked ? _("Suit le sélecteur de date") : _("Aucun sélecteur de date trouvé : aujourd'hui")}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div>
           ${c.show_tabs !== false ? `<div class="seg">${[["energy", "mdi:chart-bar", _("Énergie")], ["power", "mdi:chart-bell-curve", _("Puissance")]].map(([k, ic, l]) => `<button data-m="${k}" class="${this._mode === k ? "on" : ""}"><ha-icon icon="${ic}"></ha-icon>${l}</button>`).join("")}</div>` : ""}
         </div></div>
-      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${esc(_(this._err))}</div>` : ""}
       ${chips}
       <div class="cw">${chart}<div class="tip"></div></div>
     </ha-card>`;
@@ -2121,6 +2145,7 @@ const HEAT = "#e2702a", COOL = "#4aa8e0";
 
 class HolmClimateEnergyCard extends HTMLElement {
   setConfig(c) {
+    c = cleanColors(c); // couleurs de la configuration validées avant tout affichage
     if (!c || !Array.isArray(c.rooms) || !c.rooms.length) throw new Error("holm-climate-energy-card : 'rooms' est requis");
     this._c = { title: "Chauffage & climatisation", cost_mode: "real", compare: true, view: "bars", show_frame: true, ...c };
     this._view = this._c.view; this._sel = null;
@@ -2311,9 +2336,9 @@ class HolmClimateEnergyCard extends HTMLElement {
     const n = d.T.length; if (!n) return "";
     const max = Math.max(...rooms.flatMap((r) => r.hs.map((v, i) => v + r.cs[i])), 1e-6);
     const step = Math.ceil(n / (d.period === "hour" ? 12 : 16));
-    return `<div class="hm" style="--n:${n}">${rooms.map((r) => `<div class="hr"><div class="hn">${r.name}</div><div class="hc">${r.hs.map((v, i) => {
+    return `<div class="hm" style="--n:${n}">${rooms.map((r) => `<div class="hr"><div class="hn">${esc(r.name)}</div><div class="hc">${r.hs.map((v, i) => {
       const tot = v + r.cs[i], col = r.cs[i] > v ? cc : hc, a = tot > 0 ? 0.18 + 0.82 * Math.sqrt(tot / max) : 0;
-      return `<i title="${r.name} · ${this._tlab(d.T[i], d.period)} : ${fr(tot, 2)} kWh" style="background:${tot > 0 ? `color-mix(in srgb, ${col} ${Math.round(a * 100)}%, transparent)` : ""}"></i>`;
+      return `<i title="${esc(r.name)} · ${this._tlab(d.T[i], d.period)} : ${fr(tot, 2)} kWh" style="background:${tot > 0 ? `color-mix(in srgb, ${esc(col)} ${Math.round(a * 100)}%, transparent)` : ""}"></i>`;
     }).join("")}</div></div>`).join("")}
       <div class="hr ax2"><div class="hn"></div><div class="hc">${d.T.map((t, i) => `<span>${i % step === 0 ? this._tlab(t, d.period, true) : ""}</span>`).join("")}</div></div></div>`;
   }
@@ -2341,7 +2366,7 @@ class HolmClimateEnergyCard extends HTMLElement {
       const tiles = R.map((r, i) => {
         const inten = r.kwh / max, dom = r.ck > r.hk ? cc : hc;
         return `<div class="tile ${this._sel === i ? "on" : ""} ${r.kwh < 0.005 ? "off" : ""}" data-i="${i}" style="--t:${dom};--a:${Math.round(8 + inten * 30)}%">
-          <div class="th"><ha-icon icon="${r.icon || (r.ck > r.hk ? "mdi:snowflake" : "mdi:radiator")}"></ha-icon><span>${r.name}</span></div>
+          <div class="th"><ha-icon icon="${esc(r.icon || (r.ck > r.hk ? "mdi:snowflake" : "mdi:radiator"))}"></ha-icon><span>${esc(r.name)}</span></div>
           <div class="tv">${fr(r.kwh, r.kwh < 10 ? 2 : 1)} <small>kWh</small></div>
           <div class="te">${fr(r.eur, 2)} ${CUR} ${delta(r.kwh, r.prev)}</div>
           <div class="sb">${r.kwh > 0 ? `<i style="flex:${r.hk};background:${hc}"></i><i style="flex:${r.ck};background:${cc}"></i>` : ""}</div></div>`;
@@ -2358,7 +2383,7 @@ class HolmClimateEnergyCard extends HTMLElement {
       </div>
       <div class="tiles">${tiles}</div>
       <div class="ch">
-        <div class="chh"><div class="cht">${sel ? sel.name : _("Toute la maison")}${sel ? ` <button class="clr" title="${_("Revenir à toute la maison")}">✕</button>` : ""}</div>
+        <div class="chh"><div class="cht">${esc(sel ? sel.name : _("Toute la maison"))}${sel ? ` <button class="clr" title="${_("Revenir à toute la maison")}">✕</button>` : ""}</div>
           <div class="lg"><span><b style="background:${hc}"></b>${_("Chauffage")}</span><span><b style="background:${cc}"></b>${_("Clim")}</span></div>
           <div class="seg">${[["bars", "mdi:chart-bar"], ["heatmap", "mdi:view-grid"]].map(([k, ic]) => `<button data-v="${k}" class="${this._view === k ? "on" : ""}" title="${k === "bars" ? _("Barres") : _("Carte de chaleur")}"><ha-icon icon="${ic}"></ha-icon></button>`).join("")}</div></div>
         ${this._view === "heatmap" ? this._heat(d, shown, hc, cc) : this._bars(d, shown, hc, cc)}
@@ -2422,9 +2447,9 @@ class HolmClimateEnergyCard extends HTMLElement {
       @container (max-width: 520px) { .kpis { grid-template-columns:1fr 1fr; } .kpis .kpi:last-child { grid-column:span 2; } .kpis.k2 .kpi:last-child { grid-column:auto; } .lg { display:none; } .hr { grid-template-columns:78px 1fr; } .tiles { grid-template-columns:repeat(2, 1fr); } }
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
-      <div class="hd"><div class="tt">${_(c.title || "")}</div>
+      <div class="hd"><div class="tt">${esc(_(c.title || ""))}</div>
         <div class="pd" title="${this._linked ? _("Suit le sélecteur de date") : _("Aucun sélecteur de date trouvé : aujourd'hui")}"><ha-icon icon="${this._linked ? "mdi:calendar-sync" : "mdi:calendar-today"}"></ha-icon>${this._periodLabel()}</div></div>
-      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${esc(_(this._err))}</div>` : ""}
       ${body}
     </ha-card>`;
     const sr = this.shadowRoot;
@@ -2522,7 +2547,7 @@ class HolmClimateEnergyCardEditor extends HTMLElement {
     const box = this.querySelector(".items");
     c.rooms.forEach((it, i) => {
       const wrap = document.createElement("div"); wrap.className = "it";
-      wrap.innerHTML = `<div class="ih">${it.name || _("Pièce ") + (i + 1)}<span><button data-a="up">▲</button><button data-a="down">▼</button><button data-a="del">✕</button></span></div>`;
+      wrap.innerHTML = `<div class="ih">${esc(it.name || _("Pièce ") + (i + 1))}<span><button data-a="up">▲</button><button data-a="down">▼</button><button data-a="del">✕</button></span></div>`;
       wrap.appendChild(this._form(ROOM, { ...it }, (v) => {
         const out = {};
         for (const [k, val] of Object.entries(v)) { if (val === "" || val === undefined || val === null) continue; out[k] = val; }
@@ -2558,6 +2583,7 @@ const fr = (v, d = 1) => Number(v).toLocaleString(NUMLOC, { minimumFractionDigit
 
 class HolmYearBarsCard extends HTMLElement {
   setConfig(c) {
+    c = cleanColors(c); // couleurs de la configuration validées avant tout affichage
     if (!c || !c.entity) throw new Error("holm-year-bars-card : 'entity' est requis");
     this._c = { title: "Énergie annuelle", unit: "auto", color: "#0ABFBF", show_projection: true, show_frame: true, ...c };
     this._data = null;
@@ -2671,8 +2697,8 @@ class HolmYearBarsCard extends HTMLElement {
       .err { color:var(--error-color); font-size:12px; }
     </style>
     <ha-card class="${c.show_frame === false ? "noframe" : ""}">
-      ${c.title ? `<div class="tt">${_(c.title)}</div>` : ""}
-      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>` : ""}
+      ${c.title ? `<div class="tt">${esc(_(c.title))}</div>` : ""}
+      ${this._err ? `<div class="err">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${esc(_(this._err))}</div>` : ""}
       ${body}
     </ha-card>`;
   }
@@ -2734,6 +2760,7 @@ window.customCards = window.customCards || [];
 // holm-energy-years-card — totaux annuels d'une statistique d'énergie (sans helper)
 class HolmEnergyYearsCard extends HTMLElement {
   setConfig(c) {
+    c = cleanColors(c); // couleurs de la configuration validées avant tout affichage
     if (!c || !c.entity) throw new Error("holm-energy-years-card : 'entity' est requis");
     this._c = { title: "Période", label: "Énergie", color: "var(--primary-color)", start_year: 2000, ...c };
     this._fetched = 0;
@@ -2778,18 +2805,18 @@ class HolmEnergyYearsCard extends HTMLElement {
     const total = rows.reduce((a, r) => a + r.v, 0);
     const items = [{ k: _("Total"), v: total, main: true }, ...rows.map((r) => ({ k: String(r.year), v: r.v }))];
     const body = this._err
-      ? `<div class="msg">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${_(this._err)}</div>`
+      ? `<div class="msg">${this._err === window.__holmNoEntity ? "" : _("Erreur : ")}${esc(_(this._err))}</div>`
       : !this._rows
       ? `<div class="msg">${_("Chargement…")}</div>`
       : items.map((i) => `
         <div class="row${i.main ? " main" : ""}">
           <div class="k">${i.k}</div>
           <div class="dot"></div>
-          <div class="v"><span class="l">${_(c.label)} :</span> ${this._fmt(i.v)}</div>
+          <div class="v"><span class="l">${esc(_(c.label))} :</span> ${this._fmt(i.v)}</div>
         </div>`).join("");
     this.shadowRoot.innerHTML = `
       <style>
-        :host { --acc: ${c.color}; }
+        :host { --acc: ${cssColor(c.color, "var(--primary-color)")}; }
         ha-card { padding: 0 0 12px; overflow: hidden; }
         .hdr { padding: 14px 16px 10px; font-size: 13px; font-weight: 700; letter-spacing: .6px;
                text-transform: uppercase; color: var(--primary-text-color);
@@ -2810,7 +2837,7 @@ class HolmEnergyYearsCard extends HTMLElement {
         .msg { padding: 16px; color: var(--secondary-text-color); }
       </style>
       <ha-card>
-        <div class="hdr">${_(c.title)}</div>
+        <div class="hdr">${esc(_(c.title))}</div>
         <div class="tl">${body}</div>
       </ha-card>`;
   }
@@ -2822,5 +2849,5 @@ window.customCards = window.customCards || [];
 { const _pl = LANG, _pn = NUMLOC; setLang(document.querySelector("home-assistant")?.hass); window.customCards.push({ type: "holm-energy-years-card", name: _("HOLM – Totaux annuels"), description: _("Totaux annuels d'une statistique d'énergie, en frise verticale") }); LANG = _pl; NUMLOC = _pn; }
 })();
 
-console.info("%c HOLM-ENERGY-CARDS %c 1.4.0 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
+console.info("%c HOLM-ENERGY-CARDS %c 1.4.1 ", "background:#e3a21a;color:#111;border-radius:3px 0 0 3px", "background:#123;color:#fff;border-radius:0 3px 3px 0");
 })();

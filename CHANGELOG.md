@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1
+- **Sécurité** : un seul helper d'échappement partagé par les six cartes. Noms (config, `friendly_name`, noms d'appareils du tableau de bord Énergie, `grid_names`), titres, libellés (`label`, `self_name`), icônes et identifiants d'entité sont échappés avant d'être insérés dans le HTML (Bilan, Consommation par appareil, Production & consommation, Chauffage & climatisation et son éditeur, Énergie annuelle, Totaux annuels).
+- **Sécurité** : les couleurs de la configuration (`color`, `*_color`, `*_colors`) sont validées dans `setConfig` (hex, `rgb()`/`rgba()`, `hsl()`/`hsla()`, `var(--…)` ou nom de couleur CSS) ; une valeur invalide est ignorée et la couleur par défaut s'applique, y compris dans le bloc `<style>` des Totaux annuels.
+- **Correction** : les types de statistiques du recorder (`min`, `max`) ne passent plus par la traduction : en espagnol, portugais et polonais, la vue Puissance de Production & consommation affichait une erreur et le graphique d'appareil retombait sur l'historique brut.
+- README : l'installation commence par la recherche directe dans HACS.
+
 ## 1.4.0
 - **Devise de Home Assistant** ([#6](https://github.com/kaaribou/holm-energy-cards/issues/6)) : les montants et les prix s'affichent dans la devise réglée dans Home Assistant au lieu de « € » en dur, avec une icône adaptée (billet si la devise n'a pas d'icône). Option `currency` pour imposer une devise. Aucun changement en euros.
 - **Puissance réseau inversée ou en deux capteurs** ([#7](https://github.com/kaaribou/holm-energy-cards/issues/7)) : *Production & consommation* reprend toutes les formes de puissance réseau du tableau Énergie (`power_config` standard, inversé, ou deux capteurs), à partir des capteurs d'origine et de leur historique. Nouvelles options `grid_power_invert`, `grid_power_import` et `grid_power_export`, aussi dans l'éditeur. La valeur en direct tient compte des capteurs en kW.

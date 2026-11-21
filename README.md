@@ -21,7 +21,13 @@ HOLM Energy Cards s'appuie sur le **tableau de bord Énergie** de Home Assistant
 | [Énergie par année](#-énergie-par-année) | `custom:holm-year-bars-card` | Barres annuelles, comparaison « à date » et projection de l'année |
 | [Totaux annuels](#-totaux-annuels) | `custom:holm-energy-years-card` | Total et années d'une statistique, en frise verticale |
 
-### 🆕 Nouveautés de la 1.4.0
+### 🆕 Nouveautés de la 1.4.1
+
+- 🔒 **Sécurité** : dans les six cartes, les noms (configurés, repris d'une entité ou du tableau de bord Énergie), titres, libellés et icônes sont échappés avant l'affichage. Un nom contenant `<` ou `"` s'affiche tel quel et ne peut plus exécuter de code.
+- 🎨 **Couleurs vérifiées** : toutes les options de couleur (`color`, `solar_color`, `grid_colors`, `heat_color`…) acceptent `#1f6aa8`, `rgb(…)` / `rgba(…)`, `hsl(…)`, `var(--ma-variable)` ou un nom de couleur (`red`). Une valeur dans un autre format est ignorée et la couleur par défaut est utilisée.
+- 🐛 **Correction** : en espagnol, portugais et polonais, la vue Puissance de *Production & consommation* affichait une erreur, et le graphique d'un appareil se rabattait sur l'historique brut. Les statistiques `min` / `max` sont maintenant demandées correctement dans toutes les langues.
+
+### Nouveautés de la 1.4.0
 
 Merci à Lheriss pour ces trois idées. Rien ne change pour une installation existante en euros, avec un compteur réseau classique et un chauffage électrique.
 
@@ -73,10 +79,11 @@ Les données viennent des statistiques long terme de Home Assistant (celles du t
 
 ### Avec HACS (recommandé)
 
-1. HACS → menu ⋮ → **Dépôts personnalisés**.
-2. Ajoutez `https://github.com/kaaribou/holm-energy-cards`, catégorie **Tableau de bord** (*Dashboard / Plugin*).
-3. Recherchez la carte → **Télécharger**.
-4. Rechargez la page (Ctrl + F5).
+1. Ouvrez **HACS** et recherchez **HOLM Energy Cards**.
+2. Ouvrez le dépôt → **Télécharger**.
+3. Rechargez la page (Ctrl + F5).
+
+> Si les cartes n'apparaissent pas encore dans la recherche : HACS → menu ⋮ → **Dépôts personnalisés**, ajoutez `https://github.com/kaaribou/holm-energy-cards`, catégorie **Tableau de bord** (*Dashboard / Plugin*), puis reprenez à l'étape 1.
 
 ### Manuellement
 
